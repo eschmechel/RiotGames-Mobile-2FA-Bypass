@@ -25,6 +25,7 @@
 `Riot 2FA` is a small utility that lets you store and view the one-time passwords (TOTP codes) for your Riot Games account on your desktop instead of using the official mobile 2FA app.
 
 It uses Riot's own login flow to fetch your 2FA secret, stores it locally on your machine, and continuously generates valid 2FA codes for any accounts you add, wich allow to queue ranked without using any mobile device.
+> All accounts secrets are stored in `%appdata%\Riot2FA\accounts.json`
 
 ### ⚠️ Important warning
 
