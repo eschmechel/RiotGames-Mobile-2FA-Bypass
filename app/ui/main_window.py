@@ -1,0 +1,171 @@
+import time
+
+from PyQt6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QMessageBox,
+    QDialog,
+)
+from PyQt6.QtCore import Qt, QTimer
+
+from app.core import load_accounts, save_accounts, PERIOD
+from app.api import fetch_riot_id, enable_mfa, verify_mfa
+from app.ui.toast import Toast
+from app.ui.account_card import AccountCard
+from app.ui.manual_add_dialog import ManualAddDialog
+from app.ui.login_browser_dialog import LoginBrowserDialog
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Riot 2FA")
+        self.setMinimumSize(560, 300)
+        self.resize(560, 400)
+
+        self.accounts = load_accounts()
+        self.cards: list[AccountCard] = []
+        self._last_step = int(time.time()) // PERIOD
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        outer = QVBoxLayout(central)
+        outer.setContentsMargins(18, 14, 18, 14)
+        outer.setSpacing(0)
+
+        hdr = QHBoxLayout()
+        title = QLabel("RIOT 2FA")
+        title.setObjectName("titleLabel")
+        hdr.addWidget(title)
+        hdr.addStretch()
+
+        b1 = QPushButton("Add via Login")
+        b1.setObjectName("addLoginBtn")
+        b1.setFixedWidth(130)
+        b1.clicked.connect(self._add_via_login)
+        hdr.addWidget(b1)
+        hdr.addSpacing(6)
+        b2 = QPushButton("Add Manually")
+        b2.setObjectName("addManualBtn")
+        b2.setFixedWidth(120)
+        b2.clicked.connect(self._add_manually)
+        hdr.addWidget(b2)
+        outer.addLayout(hdr)
+        outer.addSpacing(12)
+
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_widget)
+        self.scroll_layout.setContentsMargins(0, 0, 2, 0)
+        self.scroll_layout.setSpacing(6)
+        self.scroll_layout.addStretch()
+        self.scroll.setWidget(self.scroll_widget)
+        outer.addWidget(self.scroll, stretch=1)
+
+        self.toast = Toast(central)
+
+        self._populate()
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._tick)
+        self.timer.start(50)
+
+    def _populate(self):
+        for c in self.cards:
+            c.setParent(None)
+            c.deleteLater()
+        self.cards.clear()
+
+        while self.scroll_layout.count():
+            item = self.scroll_layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.setParent(None)
+                w.deleteLater()
+
+        if not self.accounts:
+            lbl = QLabel("No accounts yet — add one with the buttons above")
+            lbl.setObjectName("emptyLabel")
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(lbl)
+        else:
+            for acct in self.accounts:
+                card = AccountCard(acct["name"], acct["seed"])
+                card.remove_requested.connect(self._remove_account)
+                card.copy_requested.connect(lambda: self.toast.popup("Copied to clipboard"))
+                self.cards.append(card)
+                self.scroll_layout.addWidget(card)
+        self.scroll_layout.addStretch()
+
+    def _tick(self):
+        now = time.time()
+        elapsed = now % PERIOD
+        remaining_frac = 1.0 - elapsed / PERIOD
+        remaining_sec = int(PERIOD - elapsed)
+        step = int(now // PERIOD)
+        code_changed = step != self._last_step
+        self._last_step = step
+
+        for card in self.cards:
+            card.update_bar(remaining_frac, remaining_sec)
+            if code_changed:
+                card.refresh_code()
+
+    def _save_and_refresh(self):
+        save_accounts(self.accounts)
+        self._populate()
+
+    def _remove_account(self, name, seed):
+        self.accounts = [
+            a for a in self.accounts if not (a["name"] == name and a["seed"] == seed)
+        ]
+        self._save_and_refresh()
+
+    def _add_via_login(self):
+        dlg = LoginBrowserDialog(self)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        cookies = dlg.cookies
+        csrf = dlg.csrf_token
+        id_tok = dlg.id_token
+        if not csrf or not id_tok:
+            QMessageBox.warning(self, "Error", "Login OK but tokens could not be extracted.")
+            return
+
+        try:
+            name = fetch_riot_id(cookies, csrf)
+        except Exception:
+            name = "Unknown"
+
+        try:
+            seed = enable_mfa(cookies, csrf)
+        except Exception as exc:
+            QMessageBox.critical(self, "Enable MFA Failed", str(exc))
+            return
+
+        try:
+            verify_mfa(id_tok, seed)
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                "Verify Warning",
+                f"MFA enabled but verification failed:\n{exc}\n\nSeed saved anyway.",
+            )
+
+        self.accounts.append({"name": name, "seed": seed})
+        self._save_and_refresh()
+        QMessageBox.information(self, "Success", f"2FA added for {name}")
+
+    def _add_manually(self):
+        dlg = ManualAddDialog(self)
+        if dlg.exec() == QDialog.DialogCode.Accepted and dlg.result_data:
+            self.accounts.append(dlg.result_data)
+            self._save_and_refresh()
+
