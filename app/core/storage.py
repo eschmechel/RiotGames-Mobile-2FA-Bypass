@@ -5,9 +5,8 @@ import json
 
 def _project_root():
     if getattr(sys, "frozen", False):
-        return os.path.dirname(os.path.abspath(sys.executable))
+        return os.path.dirname(os.path.abspath(sys.argv[0]))
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 ACCOUNTS_FILE = os.path.join(_project_root(), "accounts.json")
 
