@@ -14,8 +14,7 @@
     <img src="https://img.shields.io/badge/status-Working-28A745?style=for-the-badge&labelColor=000000" />
   </p>
   <p align="center">
-    [![Watch the video](https://img.youtube.com/vi/f1bqPi2Ku9E/maxresdefault.jpg)](https://youtu.be/f1bqPi2Ku9E)
-
+      <img src="./images/main.png" alt="Riot 2FA main window" />
   </p>
 </div>
 
@@ -42,6 +41,10 @@ It uses Riot's own login flow to fetch your 2FA secret, stores it locally on you
 - **Multiple accounts**: Manage more than one Riot account at the same time.
 - **Quick copy**: Click to copy codes to your clipboard for easy pasting into the Riot client.
 - **Local storage**: Account data is stored locally in a simple JSON file alongside the app, wich mean control on your datas, and easily sharable.
+
+### 🎥 Video Tutorial
+
+To have a full tutorial on how to use: [Click here](https://youtu.be/f1bqPi2Ku9E)
 
 ### 🖼️ Screenshot
 
