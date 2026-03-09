@@ -14,7 +14,7 @@
     <img src="https://img.shields.io/badge/status-Working-28A745?style=for-the-badge&labelColor=000000" />
   </p>
   <p align="center">
-    <img src="./images/main.png" alt="Riot 2FA main window" />
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/f1bqPi2Ku9E?si=B_ELvRxT8cnDdsga" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
   </p>
 </div>
 
