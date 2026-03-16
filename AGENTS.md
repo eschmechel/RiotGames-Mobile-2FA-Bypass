@@ -25,7 +25,8 @@ python main.py
 
 ### Build executable
 ```bash
-pyinstaller --onefile --windowed --name Riot2FA \
+pyinstaller --onefile --windowed --name Riot2FABypass \
+  --icon=assets/icon/riot2fa-bypass.ico \
   --hidden-import=keyring.backends.Windows \
   --collect-all keyring \
   main.py

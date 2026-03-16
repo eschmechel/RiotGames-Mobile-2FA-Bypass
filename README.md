@@ -22,7 +22,7 @@
 
 ### 🔍 Overview
 
-`Riot 2FA` is a secure desktop utility that stores and generates TOTP codes for your Riot Games accounts on your desktop instead of using the official mobile 2FA app.
+`Riot 2FA Bypass` is a secure desktop utility that stores and generates TOTP codes for your Riot Games accounts on your desktop instead of using the official mobile 2FA app.
 
 It uses Riot's OAuth login flow to fetch your 2FA secret, encrypts it with AES-256-GCM, and stores it locally. The app requires a password to access your seeds (optional), providing an extra layer of security.
 
@@ -80,7 +80,7 @@ Main window:
 #### Option 1 — Download prebuilt release (recommended)
 
 - Go to the [**Releases**](https://github.com/eschmechel/RiotGames-Mobile-2FA-Bypass/releases) section of this project.
-- Download the latest `Riot2FA.exe`.
+- Download the latest `Riot2FABypass.exe`.
 - Run the executable to start the app.
 
 #### Option 2 — Run from source
@@ -105,13 +105,14 @@ To build the `.exe` yourself:
 
 ```bash
 pip install -r requirements.txt
-pyinstaller --onefile --windowed --name Riot2FA \
+pyinstaller --onefile --windowed --name Riot2FABypass \
+  --icon=assets/icon/riot2fa-bypass.ico \
   --hidden-import=keyring.backends.Windows \
   --collect-all keyring \
   main.py
 ```
 
-The executable will be in `dist/Riot2FA.exe`.
+The executable will be in `dist/Riot2FABypass.exe`.
 
 ---
 

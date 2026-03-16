@@ -1,5 +1,7 @@
 import sys
+from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QDialog
+from PyQt6.QtGui import QIcon
 
 from app.styles import load_stylesheet
 from app.ui.main_window import MainWindow
@@ -11,6 +13,9 @@ from app.core.logger import log_event
 
 def main():
     app = QApplication(sys.argv)
+    icon_path = Path(__file__).parent.parent / "assets" / "icon" / "riot2fa-bypass.ico"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     app.setStyle("Fusion")
     app.setStyleSheet(load_stylesheet())
 

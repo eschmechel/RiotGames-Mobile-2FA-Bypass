@@ -77,7 +77,7 @@ def _verify_password_and_get_dek(parent, password: str) -> tuple[bool, bytes | N
 class PasswordSetupDialog(QDialog):
     def __init__(self, parent=None, initial_accounts=None):
         super().__init__(parent)
-        self.setWindowTitle("Set up Riot 2FA")
+        self.setWindowTitle("Set up Riot 2FA Bypass")
         self.setFixedSize(400, 300)
         self.setModal(True)
         self.dek = None
@@ -206,7 +206,7 @@ class PasswordSetupDialog(QDialog):
 class PasswordUnlockDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Unlock Riot 2FA")
+        self.setWindowTitle("Unlock Riot 2FA Bypass")
         self.setFixedSize(350, 200)
         self.setModal(True)
         self.setup_ui()

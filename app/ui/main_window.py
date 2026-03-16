@@ -54,7 +54,7 @@ def _create_lock_icon(closed: bool) -> QPixmap:
 class MainWindow(QMainWindow):
     def __init__(self, dek=None, has_password=True):
         super().__init__()
-        self.setWindowTitle("Riot 2FA")
+        self.setWindowTitle("Riot 2FA Bypass")
         self.setMinimumSize(560, 300)
         self.resize(560, 400)
 

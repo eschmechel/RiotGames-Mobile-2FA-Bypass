@@ -28,7 +28,8 @@ jobs:
 
       - name: Build check
         run: |
-          pyinstaller --onefile --windowed --name Riot2FA `
+          pyinstaller --onefile --windowed --name Riot2FABypass `
+            --icon=assets/icon/riot2fa-bypass.ico `
             --hidden-import=keyring.backends.Windows `
             --collect-all keyring `
             main.py
@@ -36,7 +37,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Riot2FA-dev-build
-          path: dist/Riot2FA.exe
+          name: Riot2FABypass-dev-build
+          path: dist/Riot2FABypass.exe
           retention-days: 7
           if-no-files-found: error

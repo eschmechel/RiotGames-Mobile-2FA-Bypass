@@ -24,7 +24,8 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --windowed --name Riot2FA `
+          pyinstaller --onefile --windowed --name Riot2FABypass `
+            --icon=assets/icon/riot2fa-bypass.ico `
             --hidden-import=keyring.backends.Windows `
             --collect-all keyring `
             main.py
@@ -33,6 +34,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ github.ref_name }} dist/Riot2FA.exe `
-            --title "Riot 2FA ${{ github.ref_name }}" `
+          gh release create ${{ github.ref_name }} dist/Riot2FABypass.exe `
+            --title "Riot 2FA Bypass ${{ github.ref_name }}" `
             --generate-notes
