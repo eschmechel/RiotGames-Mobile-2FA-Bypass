@@ -1,9 +1,11 @@
 import base64
 import json
 import os
+import sys
 from typing import Any
 
 from app.core.encryption import encrypt, decrypt
+from app.core.logger import log_event
 
 APPDATA_DIR = os.path.join(os.getenv("APPDATA") or "", "Riot2FA")
 ACCOUNTS_FILE = os.path.join(APPDATA_DIR, "accounts.json")
@@ -118,3 +120,63 @@ def save_accounts(accounts: list[dict[str, Any]], dek: bytes | None = None) -> N
 
     with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
         json.dump(encrypted_data, f, indent=2, ensure_ascii=False)
+
+
+def get_minimize_to_tray() -> bool:
+    config = load_config()
+    return config.get("minimize_to_tray", True) if config else True
+
+
+def set_minimize_to_tray(enabled: bool) -> None:
+    config = load_config() or {}
+    config["minimize_to_tray"] = enabled
+    save_config(config)
+
+
+def get_auto_start() -> bool:
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_READ,
+        )
+        try:
+            winreg.QueryValueEx(key, "Riot2FABypass")
+            winreg.CloseKey(key)
+            return True
+        except FileNotFoundError:
+            winreg.CloseKey(key)
+            return False
+    except Exception as e:
+        log_event("auto_start_check_failed", error=str(e))
+        return False
+
+
+def set_auto_start(enabled: bool) -> None:
+    if sys.platform != "win32":
+        return
+    try:
+        import winreg
+
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_WRITE,
+        )
+        if enabled:
+            exe_path = sys.executable
+            winreg.SetValueEx(key, "Riot2FABypass", 0, winreg.REG_SZ, exe_path)
+        else:
+            try:
+                winreg.DeleteValue(key, "Riot2FABypass")
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+    except Exception as e:
+        log_event("auto_start_set_failed", error=str(e))

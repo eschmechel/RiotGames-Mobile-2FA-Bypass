@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -10,11 +11,22 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QDialog,
+    QSystemTrayIcon,
+    QMenu,
 )
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPixmap, QPainter, QColor
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QIcon
 
-from app.core import load_accounts, save_accounts, PERIOD
+from app.core import (
+    load_accounts,
+    save_accounts,
+    PERIOD,
+    get_minimize_to_tray,
+    set_minimize_to_tray,
+    get_auto_start,
+    set_auto_start,
+    get_code,
+)
 from app.core.logger import log_event
 from app.api import fetch_riot_id, enable_mfa, verify_mfa
 from app.ui.toast import Toast
@@ -121,6 +133,8 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self._tick)
         self.timer.start(50)
 
+        self._setup_tray()
+
     def _setup_menu(self):
         menubar = self.menuBar()
         settings_menu = menubar.addMenu("Settings")
@@ -130,8 +144,117 @@ class MainWindow(QMainWindow):
 
         settings_menu.addSeparator()
 
+        self._minimize_action = settings_menu.addAction("Minimize to tray on close")
+        self._minimize_action.setCheckable(True)
+        self._minimize_action.setChecked(get_minimize_to_tray())
+        self._minimize_action.triggered.connect(self._toggle_minimize_to_tray)
+
+        self._auto_start_action = settings_menu.addAction("Start with Windows")
+        self._auto_start_action.setCheckable(True)
+        self._auto_start_action.setChecked(get_auto_start())
+        self._auto_start_action.triggered.connect(self._toggle_auto_start_menu)
+
+        settings_menu.addSeparator()
+
         exit_action = settings_menu.addAction("Exit")
         exit_action.triggered.connect(self.close)
+
+    def _toggle_minimize_to_tray(self, enabled):
+        set_minimize_to_tray(enabled)
+        self._minimize_action.setChecked(enabled)
+
+    def _toggle_auto_start_menu(self, enabled):
+        set_auto_start(enabled)
+        self._auto_start_action.setChecked(enabled)
+        self._update_tray_menu()
+
+    def _setup_tray(self):
+        icon_path = (
+            Path(__file__).parent.parent.parent
+            / "assets"
+            / "icon"
+            / "riot2fa-bypass.ico"
+        )
+        if icon_path.exists():
+            tray_icon = QIcon(str(icon_path))
+        else:
+            tray_icon = QIcon()
+        self.tray = QSystemTrayIcon(tray_icon, self)
+        self.tray.setToolTip("Riot 2FA Bypass")
+        self.tray.activated.connect(self._tray_activated)
+        self._update_tray_menu()
+        self.tray.show()
+
+    def _update_tray_menu(self):
+        menu = QMenu(self)
+
+        show_action = menu.addAction("Show Window")
+        show_action.triggered.connect(self._show_from_tray)
+
+        menu.addSeparator()
+
+        copy_menu = menu.addMenu("Copy 2FA Code")
+        if self.accounts:
+            for acct in self.accounts:
+                action = copy_menu.addAction(acct["name"])
+                action.triggered.connect(
+                    lambda checked, a=acct: self._copy_from_tray(a)
+                )
+        else:
+            copy_menu.setEnabled(False)
+
+        menu.addSeparator()
+
+        settings_menu = menu.addMenu("Settings")
+        minimize_action = settings_menu.addAction("Minimize to tray on close")
+        minimize_action.setCheckable(True)
+        minimize_action.setChecked(get_minimize_to_tray())
+        minimize_action.triggered.connect(set_minimize_to_tray)
+
+        auto_start_action = settings_menu.addAction("Start with Windows")
+        auto_start_action.setCheckable(True)
+        auto_start_action.setChecked(get_auto_start())
+        auto_start_action.triggered.connect(self._toggle_auto_start)
+
+        menu.addSeparator()
+
+        exit_action = menu.addAction("Exit")
+        exit_action.triggered.connect(self._exit_from_tray)
+
+        self.tray.setContextMenu(menu)
+
+    def _tray_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._show_from_tray()
+
+    def _show_from_tray(self):
+        self.show()
+        self.activateWindow()
+        self.raise_()
+
+    def _copy_from_tray(self, account):
+        from PyQt6.QtWidgets import QApplication
+
+        code = get_code(account["seed"])
+        QApplication.clipboard().setText(code)
+        _safe_log("code_copied", name=account["name"], method="tray")
+
+        QTimer.singleShot(30000, lambda: QApplication.clipboard().setText(""))
+
+    def _toggle_auto_start(self, enabled):
+        set_auto_start(enabled)
+
+    def _exit_from_tray(self):
+        self.tray.hide()
+        self.close()
+
+    def closeEvent(self, event):
+        if get_minimize_to_tray():
+            event.ignore()
+            self.hide()
+        else:
+            self.tray.hide()
+            event.accept()
 
     def _update_lock_icon(self):
         pixmap = _create_lock_icon(self.has_password)
@@ -204,6 +327,7 @@ class MainWindow(QMainWindow):
     def _save_and_refresh(self):
         save_accounts(self.accounts, self.dek)
         self._populate()
+        self._update_tray_menu()
 
     def _remove_account(self, name, seed):
         self.accounts = [
