@@ -161,7 +161,7 @@ The executable will be in `dist/Riot2FA.exe`.
 
 ### 🙌 Credits
 
-- **Author**: [Sysy's](https://github.com/Askin242)
+- **Original Author**: [Sysy's](https://github.com/Askin242)
 - **Current Maintainer**: [Elliott Schmechel](https://github.com/eschmechel)
 
 ### 📜 License

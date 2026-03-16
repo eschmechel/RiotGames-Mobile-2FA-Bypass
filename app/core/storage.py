@@ -63,6 +63,9 @@ def load_accounts(dek: bytes | None = None) -> list[dict[str, Any]]:
     with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
         encrypted_data = json.load(f)
 
+    if isinstance(encrypted_data, list):
+        return encrypted_data
+
     if encrypted_data.get("version") != CONFIG_VERSION:
         return []
 

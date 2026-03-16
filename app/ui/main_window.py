@@ -193,7 +193,7 @@ class MainWindow(QMainWindow):
                 card.refresh_code()
 
     def _save_and_refresh(self):
-        save_accounts(self.accounts)
+        save_accounts(self.accounts, self.dek)
         self._populate()
 
     def _remove_account(self, name, seed):
