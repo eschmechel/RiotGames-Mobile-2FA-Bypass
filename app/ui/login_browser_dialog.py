@@ -88,7 +88,7 @@ class LoginBrowserDialog(QDialog):
         self.browser.setUrl(QUrl(self._current_url))
 
     def _open_system_browser(self):
-        webbrowser.open(self._current_url)
+        webbrowser.open(self._current_url, new=2)
         self.status.setText(
             "  Opened in system browser. After logging in manually, copy your id_token cookie "
             "and CSRF token, then paste them into the app."

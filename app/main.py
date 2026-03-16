@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication, QDialog
 from app.styles import load_stylesheet
 from app.ui.main_window import MainWindow
 from app.ui.password_dialog import PasswordSetupDialog, PasswordUnlockDialog
-from app.core.storage import is_first_run, load_config, needs_migration
+from app.core.storage import is_first_run, load_config, needs_migration, load_accounts
 from app.core.auth import load_dek
 
 
@@ -64,7 +64,8 @@ def main():
                             "Your accounts need to be re-encrypted. "
                             "Please set a password to secure your accounts.",
                         )
-                        dlg = PasswordSetupDialog()
+                        existing_accounts = load_accounts()
+                        dlg = PasswordSetupDialog(initial_accounts=existing_accounts)
                         if dlg.exec() == QDialog.DialogCode.Accepted:
                             dek = dlg.dek
                             has_password = True
