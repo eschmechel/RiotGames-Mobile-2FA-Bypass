@@ -5,6 +5,10 @@ from app.core.storage import (
     save_config,
     is_first_run,
     detect_legacy,
+    get_minimize_to_tray,
+    set_minimize_to_tray,
+    get_auto_start,
+    set_auto_start,
 )
 from app.core.auth_totp import PERIOD, get_code, extract_seed
 from app.core.encryption import (
@@ -36,6 +40,10 @@ __all__ = [
     "save_config",
     "is_first_run",
     "detect_legacy",
+    "get_minimize_to_tray",
+    "set_minimize_to_tray",
+    "get_auto_start",
+    "set_auto_start",
     "PERIOD",
     "get_code",
     "extract_seed",
