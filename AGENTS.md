@@ -2,8 +2,8 @@
 
 ## Project Overview
 
-**Project Name:** Riot 2FA
-**Version:** 2.0.0
+**Project Name:** Riot 2FA Bypass
+**Version:** 2.2.0
 **Type:** Desktop Application (Python/PyQt6)
 **Platform:** Windows only
 **Purpose:** Desktop utility to manage Riot Games TOTP 2FA codes with full encryption at rest,
@@ -49,6 +49,9 @@ flake8 app/ main.py --max-line-length=100
 - **Storage:** Encrypted JSON blob in `%appdata%/Riot2FA/accounts.json` (version 2 format)
 - **Config:** `%appdata%/Riot2FA/config.json` stores auth hash, salt, encrypted DEK
 - **Logs:** `%appdata%/Riot2FA/logs/audit.log` — rotating, 10 MB x 5 files
+- **i18n:** JSON files in `app/i18n/`, key format: `section.key`
+- **System tray:** Use `QSystemTrayIcon`, handle minimize to tray via `closeEvent`
+- **Settings:** Store in `config.json`, use boolean flags for toggles
 
 ---
 
@@ -111,6 +114,116 @@ Each phase is developed on its own branch and merged via PR:
 | `phase/6-docs`                 | Phase 6                 | Yes         |
 
 Branch off `main` for each phase. Merge to `main` before starting the next phase.
+
+---
+
+## Development Workflow
+
+1. **Plan** - Identify feature requirements, research approach
+2. **Clarify** - Iterate on questions with user, get sign-off on design
+3. **Code** - Implement feature on feature branch
+4. **Evaluate** - Run subagents for:
+   - Code review (security, best practices)
+   - Verification (testing, edge cases)
+5. **PR** - Create pull request
+6. **Lint** - Verify `flake8` passes
+7. **Push** - Merge PR and cleanup branch
+
+> **Note:** Loop back to step 3 (Code) if evaluation reveals bugs or issues.
+
+---
+
+## Conventional Commits
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format for commit messages:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+### Types
+
+| Type       | Description                                      |
+| ---------- | ------------------------------------------------ |
+| `feat`     | New feature                                      |
+| `fix`      | Bug fix                                         |
+| `docs`     | Documentation only                               |
+| `style`    | Code style changes (formatting, no logic)       |
+| `refactor`| Code refactoring                                |
+| `chore`    | Maintenance, deps, build config                  |
+| `perf`     | Performance improvement                          |
+| `security` | Security-related changes                         |
+
+### Examples
+
+```bash
+git commit -m "feat: add system tray support"
+git commit -m "fix: reauth dialog crash on copy seed"
+git commit -m "docs: update README with new features"
+git commit -m "chore: bump version to v2.2.0"
+```
+
+---
+
+## Pull Request Format
+
+**Title:** Use conventional commit format with PR number
+
+```
+feat(system tray): add tray icon with quick-copy menu
+```
+
+**Body:**
+
+```markdown
+## Summary
+
+- Brief description of changes
+- Related issues if any
+
+## Changes
+
+- Change 1
+- Change 2
+
+## Testing
+
+- How tested
+- Any known issues
+```
+
+---
+
+## Release & Changelog Format
+
+### Release Title
+
+```
+Riot 2FA Bypass v2.2.0
+```
+
+### Changelog Body
+
+```markdown
+## What's Changed
+
+### New Features
+- Feature 1 (@username)
+- Feature 2
+
+### Bug Fixes
+- Fix 1
+- Fix 2
+
+### Other Changes
+- Chore, docs, etc
+
+**Full Changelog**: https://github.com/eschmechel/RiotGames-Mobile-2FA-Bypass/compare/v2.1.4...v2.2.0
+```
 
 ---
 
