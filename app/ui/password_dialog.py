@@ -1,4 +1,6 @@
 import base64
+import secrets
+import string
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -13,6 +15,26 @@ from PyQt6.QtWidgets import (
 from ..core.auth import validate_password, hash_password, verify_password
 from ..core.storage import save_config, load_config
 from ..core.encryption import generate_dek, generate_salt, derive_kek, decrypt, encrypt
+
+
+def _generate_secure_password(length: int = 16) -> str:
+    """Generate a secure random password meeting app requirements."""
+    letters = string.ascii_letters
+    digits = string.digits
+    special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    all_chars = letters + digits + special
+
+    password = [
+        secrets.choice(letters),
+        secrets.choice(digits),
+        secrets.choice(special),
+    ]
+
+    for _ in range(length - 3):
+        password.append(secrets.choice(all_chars))
+
+    secrets.SystemRandom().shuffle(password)
+    return "".join(password)
 
 
 def _verify_password_and_get_dek(parent, password: str) -> tuple[bool, bytes | None]:
@@ -67,19 +89,34 @@ class PasswordSetupDialog(QDialog):
 
         # Password input
         layout.addWidget(QLabel("Password:"))
+        password_layout = QHBoxLayout()
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setPlaceholderText(
             "At least 8 characters, 1 number, 1 special character"
         )
-        layout.addWidget(self.password_input)
+        password_layout.addWidget(self.password_input)
+        generate_btn = QPushButton("Generate")
+        generate_btn.setFixedWidth(80)
+        generate_btn.clicked.connect(self._generate_password)
+        password_layout.addWidget(generate_btn)
+        layout.addLayout(password_layout)
 
         # Confirm password
         layout.addWidget(QLabel("Confirm Password:"))
+        confirm_layout = QHBoxLayout()
         self.confirm_input = QLineEdit()
         self.confirm_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.confirm_input.setPlaceholderText("Re-enter password")
-        layout.addWidget(self.confirm_input)
+        confirm_layout.addWidget(self.confirm_input)
+        confirm_layout.addWidget(QLabel(""))
+        confirm_layout.addStretch()
+        layout.addLayout(confirm_layout)
+
+        # Show password checkbox
+        self.show_password_checkbox = QCheckBox("Show password")
+        self.show_password_checkbox.toggled.connect(self._toggle_password_visibility)
+        layout.addWidget(self.show_password_checkbox)
 
         # Remember me checkbox
         self.remember_checkbox = QCheckBox(
@@ -100,6 +137,17 @@ class PasswordSetupDialog(QDialog):
 
         layout.addLayout(button_layout)
         self.setLayout(layout)
+
+    def _generate_password(self):
+        password = _generate_secure_password()
+        self.password_input.setText(password)
+        self.confirm_input.setText(password)
+        self.show_password_checkbox.setChecked(True)
+
+    def _toggle_password_visibility(self, checked):
+        mode = QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+        self.password_input.setEchoMode(mode)
+        self.confirm_input.setEchoMode(mode)
 
     def accept_setup(self):
         password = self.password_input.text()
@@ -258,17 +306,31 @@ class PasswordResetDialog(QDialog):
 
         layout.addWidget(QLabel("Enter new password:"))
 
+        new_password_layout = QHBoxLayout()
         self.new_password = QLineEdit()
         self.new_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.new_password.setPlaceholderText(
             "New password (8+ chars, 1 number, 1 special)"
         )
-        layout.addWidget(self.new_password)
+        new_password_layout.addWidget(self.new_password)
+        generate_btn = QPushButton("Generate")
+        generate_btn.setFixedWidth(80)
+        generate_btn.clicked.connect(self._generate_password)
+        new_password_layout.addWidget(generate_btn)
+        layout.addLayout(new_password_layout)
 
+        confirm_layout = QHBoxLayout()
         self.confirm_password = QLineEdit()
         self.confirm_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.confirm_password.setPlaceholderText("Confirm new password")
-        layout.addWidget(self.confirm_password)
+        confirm_layout.addWidget(self.confirm_password)
+        confirm_layout.addWidget(QLabel(""))
+        confirm_layout.addStretch()
+        layout.addLayout(confirm_layout)
+
+        self.show_password_checkbox = QCheckBox("Show password")
+        self.show_password_checkbox.toggled.connect(self._toggle_password_visibility)
+        layout.addWidget(self.show_password_checkbox)
 
         self.remember_checkbox = QCheckBox(
             "Remember me (store key in Windows Credential Manager)"
@@ -287,6 +349,17 @@ class PasswordResetDialog(QDialog):
 
         layout.addLayout(button_layout)
         self.setLayout(layout)
+
+    def _generate_password(self):
+        password = _generate_secure_password()
+        self.new_password.setText(password)
+        self.confirm_password.setText(password)
+        self.show_password_checkbox.setChecked(True)
+
+    def _toggle_password_visibility(self, checked):
+        mode = QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
+        self.new_password.setEchoMode(mode)
+        self.confirm_password.setEchoMode(mode)
 
     def _validate_inputs(
         self, current_password: str, new_password: str, confirm: str
