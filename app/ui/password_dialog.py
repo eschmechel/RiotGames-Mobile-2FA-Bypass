@@ -1,5 +1,4 @@
 import base64
-import os
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -10,8 +9,6 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QMessageBox,
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QGuiApplication
 
 from ..core.auth import validate_password, hash_password
 from ..core.storage import save_config
