@@ -9,6 +9,8 @@ from app.core.storage import (
     set_minimize_to_tray,
     get_auto_start,
     set_auto_start,
+    get_notifications_enabled,
+    set_notifications_enabled,
 )
 from app.core.auth_totp import PERIOD, get_code, extract_seed
 from app.core.encryption import (
@@ -44,6 +46,8 @@ __all__ = [
     "set_minimize_to_tray",
     "get_auto_start",
     "set_auto_start",
+    "get_notifications_enabled",
+    "set_notifications_enabled",
     "PERIOD",
     "get_code",
     "extract_seed",

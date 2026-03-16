@@ -26,6 +26,8 @@ from app.core import (
     set_minimize_to_tray,
     get_auto_start,
     set_auto_start,
+    get_notifications_enabled,
+    set_notifications_enabled,
     get_code,
 )
 from app.core.logger import log_event
@@ -162,6 +164,11 @@ class MainWindow(QMainWindow):
         self._auto_start_action.setChecked(get_auto_start())
         self._auto_start_action.triggered.connect(self._toggle_auto_start_menu)
 
+        self._notifications_action = settings_menu.addAction("Desktop notifications")
+        self._notifications_action.setCheckable(True)
+        self._notifications_action.setChecked(get_notifications_enabled())
+        self._notifications_action.triggered.connect(self._toggle_notifications)
+
         settings_menu.addSeparator()
 
         exit_action = settings_menu.addAction("Exit")
@@ -175,6 +182,24 @@ class MainWindow(QMainWindow):
         set_auto_start(enabled)
         self._auto_start_action.setChecked(enabled)
         self._update_tray_menu()
+
+    def _toggle_notifications(self, enabled):
+        set_notifications_enabled(enabled)
+        self._notifications_action.setChecked(enabled)
+        if enabled:
+            self._expiry_notified = False
+
+    def _show_notification(self, title: str, message: str) -> None:
+        if not get_notifications_enabled():
+            return
+        if not hasattr(self, "tray"):
+            return
+        try:
+            self.tray.showMessage(
+                title, message, QSystemTrayIcon.MessageIcon.Information, 3000
+            )
+        except Exception:
+            pass
 
     def _setup_tray(self):
         icon_path = (
@@ -343,6 +368,18 @@ class MainWindow(QMainWindow):
         code_changed = step != self._last_step
         self._last_step = step
 
+        if (
+            self.accounts
+            and remaining_sec == 5
+            and not getattr(self, "_expiry_notified", False)
+        ):
+            self._show_notification(
+                "Code Expiring Soon", "Your 2FA code will refresh in 5 seconds"
+            )
+            self._expiry_notified = True
+        elif remaining_sec > 20:
+            self._expiry_notified = False
+
         for card in self.cards:
             card.update_bar(remaining_frac, remaining_sec)
             if code_changed:
@@ -359,6 +396,7 @@ class MainWindow(QMainWindow):
         ]
         self._save_and_refresh()
         _safe_log("account_removed", name=name)
+        self._show_notification("Account Removed", f"2FA removed for {name}")
 
     def _add_via_login(self):
         dlg = LoginBrowserDialog(self)
@@ -396,6 +434,7 @@ class MainWindow(QMainWindow):
         self.accounts.append({"name": name, "seed": seed})
         self._save_and_refresh()
         _safe_log("account_added", name=name, method="oauth")
+        self._show_notification("Account Added", f"2FA added for {name}")
         QMessageBox.information(self, "Success", f"2FA added for {name}")
 
     def _add_manually(self):
@@ -404,3 +443,6 @@ class MainWindow(QMainWindow):
             self.accounts.append(dlg.result_data)
             self._save_and_refresh()
             _safe_log("account_added", name=dlg.result_data["name"], method="manual")
+            self._show_notification(
+                "Account Added", f"2FA added for {dlg.result_data['name']}"
+            )

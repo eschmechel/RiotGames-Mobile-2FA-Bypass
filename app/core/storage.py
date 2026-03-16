@@ -180,3 +180,14 @@ def set_auto_start(enabled: bool) -> None:
         winreg.CloseKey(key)
     except Exception as e:
         log_event("auto_start_set_failed", error=str(e))
+
+
+def get_notifications_enabled() -> bool:
+    config = load_config()
+    return config.get("notifications_enabled", False) if config else False
+
+
+def set_notifications_enabled(enabled: bool) -> None:
+    config = load_config() or {}
+    config["notifications_enabled"] = enabled
+    save_config(config)
