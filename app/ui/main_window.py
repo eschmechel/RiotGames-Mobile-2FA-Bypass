@@ -10,12 +10,11 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QDialog,
-    QMenuBar,
 )
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor
+from PyQt6.QtGui import QPixmap, QPainter, QColor
 
-from app.core import load_accounts, save_accounts, PERIOD, load_config
+from app.core import load_accounts, save_accounts, PERIOD
 from app.api import fetch_riot_id, enable_mfa, verify_mfa
 from app.ui.toast import Toast
 from app.ui.account_card import AccountCard

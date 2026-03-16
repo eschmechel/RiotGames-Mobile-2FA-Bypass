@@ -1,15 +1,11 @@
 import sys
-import os
 from PyQt6.QtWidgets import QApplication, QDialog
-from PyQt6.QtGui import QGuiApplication
 
 from app.styles import load_stylesheet
 from app.ui.main_window import MainWindow
 from app.ui.password_dialog import PasswordSetupDialog, PasswordUnlockDialog
 from app.core.storage import is_first_run, load_config
-from app.core.auth import validate_password
-from app.core.encryption import generate_dek, derive_kek, encrypt
-from app.core.storage import save_config, save_accounts, load_dek, store_dek, clear_dek
+from app.core.auth import load_dek
 
 
 def main():

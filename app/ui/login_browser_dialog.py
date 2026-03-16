@@ -103,4 +103,3 @@ class LoginBrowserDialog(QDialog):
                 "background-color:#1a1a0e; color:#aaaa55; font-size:11px; padding-left:10px;"
             )
             QTimer.singleShot(2000, self._try_detect)
-

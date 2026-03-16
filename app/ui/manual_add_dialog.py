@@ -68,7 +68,9 @@ class ManualAddDialog(QDialog):
             return
         seed = extract_seed(raw)
         if not seed:
-            QMessageBox.warning(self, "Invalid Input", "Could not parse a seed from the input.")
+            QMessageBox.warning(
+                self, "Invalid Input", "Could not parse a seed from the input."
+            )
             return
         try:
             base64.b32decode(seed.upper().encode("ascii"))
@@ -77,4 +79,3 @@ class ManualAddDialog(QDialog):
             return
         self.result_data = {"name": name, "seed": seed}
         self.accept()
-

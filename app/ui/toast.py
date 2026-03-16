@@ -1,4 +1,3 @@
-import PyQt6.QtWidgets as QtW
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt6.QtWidgets import QLabel, QGraphicsOpacityEffect
 
@@ -45,4 +44,3 @@ class Toast(QLabel):
         self.raise_()
         self._fade_in.start()
         self._hold.start(ms)
-
