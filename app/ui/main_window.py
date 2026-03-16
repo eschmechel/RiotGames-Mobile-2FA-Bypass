@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QPainter, QColor
 
-from app.core import load_accounts, save_accounts, PERIOD
+from app.core import load_accounts, save_accounts, PERIOD, log_event
 from app.api import fetch_riot_id, enable_mfa, verify_mfa
 from app.ui.toast import Toast
 from app.ui.account_card import AccountCard
@@ -143,6 +143,7 @@ class MainWindow(QMainWindow):
             self._update_lock_icon()
             self.accounts = load_accounts(self.dek)
             self._populate()
+            log_event("password_reset")
             QMessageBox.information(
                 self, "Success", "Password has been reset successfully."
             )
@@ -201,6 +202,7 @@ class MainWindow(QMainWindow):
             a for a in self.accounts if not (a["name"] == name and a["seed"] == seed)
         ]
         self._save_and_refresh()
+        log_event("account_removed", name=name)
 
     def _add_via_login(self):
         dlg = LoginBrowserDialog(self)
@@ -237,6 +239,7 @@ class MainWindow(QMainWindow):
 
         self.accounts.append({"name": name, "seed": seed})
         self._save_and_refresh()
+        log_event("account_added", name=name, method="oauth")
         QMessageBox.information(self, "Success", f"2FA added for {name}")
 
     def _add_manually(self):
@@ -244,3 +247,4 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.DialogCode.Accepted and dlg.result_data:
             self.accounts.append(dlg.result_data)
             self._save_and_refresh()
+            log_event("account_added", name=dlg.result_data["name"], method="manual")

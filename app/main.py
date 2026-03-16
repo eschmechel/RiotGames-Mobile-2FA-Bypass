@@ -6,6 +6,7 @@ from app.ui.main_window import MainWindow
 from app.ui.password_dialog import PasswordSetupDialog, PasswordUnlockDialog
 from app.core.storage import is_first_run, load_config, needs_migration
 from app.core.auth import load_dek
+from app.core.logger import log_event
 
 
 def main():
@@ -81,9 +82,12 @@ def main():
                         sys.exit(1)
 
     # Now we have the DEK, create and show the main window
+    log_event("app_started", has_password=has_password)
     win = MainWindow(dek=dek, has_password=has_password)
     win.show()
-    sys.exit(app.exec())
+    result = app.exec()
+    log_event("app_closed")
+    sys.exit(result)
 
 
 if __name__ == "__main__":
