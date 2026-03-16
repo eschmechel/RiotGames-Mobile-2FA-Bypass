@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-check:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint
+        run: |
+          pip install flake8
+          flake8 app/ main.py --max-line-length=100
+
+      - name: Build check
+        run: |
+          pyinstaller --onefile --windowed --name Riot2FA `
+            --hidden-import=keyring.backends.Windows `
+            --collect-all keyring `
+            main.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Riot2FA-dev-build
+          path: dist/Riot2FA.exe
+          retention-days: 7
+          if-no-files-found: error
