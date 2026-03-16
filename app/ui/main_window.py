@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QDialog,
     QSystemTrayIcon,
     QMenu,
+    QLineEdit,
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QPainter, QColor, QIcon
@@ -110,7 +111,14 @@ class MainWindow(QMainWindow):
         b2.clicked.connect(self._add_manually)
         hdr.addWidget(b2)
         outer.addLayout(hdr)
-        outer.addSpacing(12)
+        outer.addSpacing(8)
+
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search accounts...")
+        self.search_input.setObjectName("searchInput")
+        self.search_input.textChanged.connect(self._on_search_changed)
+        outer.addWidget(self.search_input)
+        outer.addSpacing(8)
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -279,6 +287,9 @@ class MainWindow(QMainWindow):
                 self, "Success", "Password has been reset successfully."
             )
 
+    def _on_search_changed(self, text):
+        self._populate()
+
     def _populate(self):
         for c in self.cards:
             c.setParent(None)
@@ -292,13 +303,26 @@ class MainWindow(QMainWindow):
                 w.setParent(None)
                 w.deleteLater()
 
-        if not self.accounts:
-            lbl = QLabel("No accounts yet — add one with the buttons above")
+        search_query = self.search_input.text().strip().lower()
+        if search_query:
+            filtered = [
+                a for a in self.accounts if search_query in a.get("name", "").lower()
+            ]
+        else:
+            filtered = self.accounts
+
+        if not filtered:
+            if search_query:
+                lbl = QLabel("No accounts match your search")
+            elif not self.accounts:
+                lbl = QLabel("No accounts yet — add one with the buttons above")
+            else:
+                lbl = QLabel("No accounts yet — add one with the buttons above")
             lbl.setObjectName("emptyLabel")
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_area_layout.addWidget(lbl)
         else:
-            for acct in self.accounts:
+            for acct in filtered:
                 card = AccountCard(
                     acct["name"], acct["seed"], has_password=self.has_password
                 )
