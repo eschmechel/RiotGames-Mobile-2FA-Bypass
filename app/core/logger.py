@@ -5,7 +5,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.1"
 
 LOG_DIR = Path(os.environ.get("APPDATA", "")) / "Riot2FA" / "logs"
 LOG_FILE = LOG_DIR / "audit.log"

@@ -21,6 +21,19 @@ def is_first_run() -> bool:
     return not os.path.exists(CONFIG_FILE)
 
 
+def needs_migration() -> bool:
+    """Check if accounts.json contains plaintext data that needs migration."""
+    _guard_appdata()
+    if not os.path.exists(ACCOUNTS_FILE):
+        return False
+    try:
+        with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return isinstance(data, list) and len(data) > 0
+    except (json.JSONDecodeError, OSError):
+        return False
+
+
 def detect_legacy() -> bool:
     _guard_appdata()
     if not os.path.exists(ACCOUNTS_FILE):
@@ -56,15 +69,23 @@ def load_accounts(dek: bytes | None = None) -> list[dict[str, Any]]:
     if not os.path.exists(ACCOUNTS_FILE):
         return []
 
-    if dek is None:
-        with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-
     with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
         encrypted_data = json.load(f)
 
     if isinstance(encrypted_data, list):
+        if dek is not None and len(encrypted_data) > 0:
+            plaintext = json.dumps(encrypted_data, ensure_ascii=False).encode("utf-8")
+            ciphertext = encrypt(plaintext, dek)
+            encrypted_data = {
+                "version": CONFIG_VERSION,
+                "data": base64.b64encode(ciphertext).decode("utf-8"),
+            }
+            with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
+                json.dump(encrypted_data, f, indent=2, ensure_ascii=False)
         return encrypted_data
+
+    if dek is None:
+        return []
 
     if encrypted_data.get("version") != CONFIG_VERSION:
         return []
