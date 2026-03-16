@@ -55,7 +55,8 @@ class LoginBrowserDialog(QDialog):
         main_layout.addLayout(toolbar)
 
         instructions = QLabel(
-            "  Log in with your Riot account. If the browser doesn't work, click 'Open in System Browser'."
+            "  Log in with your Riot account."
+            " If the browser doesn't work, click 'Open in System Browser'."
         )
         instructions.setFixedHeight(24)
         instructions.setStyleSheet(

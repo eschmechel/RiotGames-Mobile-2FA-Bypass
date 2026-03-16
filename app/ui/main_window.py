@@ -16,6 +16,12 @@ from PyQt6.QtGui import QPixmap, QPainter, QColor
 
 from app.core import load_accounts, save_accounts, PERIOD
 from app.core.logger import log_event
+from app.api import fetch_riot_id, enable_mfa, verify_mfa
+from app.ui.toast import Toast
+from app.ui.account_card import AccountCard
+from app.ui.manual_add_dialog import ManualAddDialog
+from app.ui.login_browser_dialog import LoginBrowserDialog
+from app.ui.password_dialog import PasswordResetDialog
 
 
 def _safe_log(event: str, **kwargs) -> None:
@@ -23,14 +29,6 @@ def _safe_log(event: str, **kwargs) -> None:
         log_event(event, **kwargs)
     except Exception:
         pass
-
-
-from app.api import fetch_riot_id, enable_mfa, verify_mfa
-from app.ui.toast import Toast
-from app.ui.account_card import AccountCard
-from app.ui.manual_add_dialog import ManualAddDialog
-from app.ui.login_browser_dialog import LoginBrowserDialog
-from app.ui.password_dialog import PasswordResetDialog
 
 
 def _create_lock_icon(closed: bool) -> QPixmap:
