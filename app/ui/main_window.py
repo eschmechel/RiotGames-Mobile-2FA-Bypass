@@ -22,13 +22,16 @@ from app.ui.login_browser_dialog import LoginBrowserDialog
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, dek=None):
         super().__init__()
         self.setWindowTitle("Riot 2FA")
         self.setMinimumSize(560, 300)
         self.resize(560, 400)
 
-        self.accounts = load_accounts()
+        if dek is not None:
+            self.accounts = load_accounts(dek)
+        else:
+            self.accounts = load_accounts()
         self.cards: list[AccountCard] = []
         self._last_step = int(time.time()) // PERIOD
 
@@ -58,16 +61,18 @@ class MainWindow(QMainWindow):
         outer.addLayout(hdr)
         outer.addSpacing(12)
 
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll_widget = QWidget()
-        self.scroll_layout = QVBoxLayout(self.scroll_widget)
-        self.scroll_layout.setContentsMargins(0, 0, 2, 0)
-        self.scroll_layout.setSpacing(6)
-        self.scroll_layout.addStretch()
-        self.scroll.setWidget(self.scroll_widget)
-        outer.addWidget(self.scroll, stretch=1)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.scroll_area_widget = QWidget()
+        self.scroll_area_layout = QVBoxLayout(self.scroll_area_widget)
+        self.scroll_area_layout.setContentsMargins(0, 0, 2, 0)
+        self.scroll_area_layout.setSpacing(6)
+        self.scroll_area_layout.addStretch()
+        self.scroll_area.setWidget(self.scroll_area_widget)
+        outer.addWidget(self.scroll_area, stretch=1)
 
         self.toast = Toast(central)
 
@@ -83,8 +88,8 @@ class MainWindow(QMainWindow):
             c.deleteLater()
         self.cards.clear()
 
-        while self.scroll_layout.count():
-            item = self.scroll_layout.takeAt(0)
+        while self.scroll_area_layout.count() > 0:
+            item = self.scroll_area_layout.takeAt(0)
             w = item.widget()
             if w:
                 w.setParent(None)
@@ -94,15 +99,17 @@ class MainWindow(QMainWindow):
             lbl = QLabel("No accounts yet — add one with the buttons above")
             lbl.setObjectName("emptyLabel")
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.scroll_layout.addWidget(lbl)
+            self.scroll_area_layout.addWidget(lbl)
         else:
             for acct in self.accounts:
                 card = AccountCard(acct["name"], acct["seed"])
                 card.remove_requested.connect(self._remove_account)
-                card.copy_requested.connect(lambda: self.toast.popup("Copied to clipboard"))
+                card.copy_requested.connect(
+                    lambda: self.toast.popup("Copied to clipboard")
+                )
                 self.cards.append(card)
-                self.scroll_layout.addWidget(card)
-        self.scroll_layout.addStretch()
+                self.scroll_area_layout.addWidget(card)
+        self.scroll_area_layout.addStretch()
 
     def _tick(self):
         now = time.time()
@@ -136,7 +143,9 @@ class MainWindow(QMainWindow):
         csrf = dlg.csrf_token
         id_tok = dlg.id_token
         if not csrf or not id_tok:
-            QMessageBox.warning(self, "Error", "Login OK but tokens could not be extracted.")
+            QMessageBox.warning(
+                self, "Error", "Login OK but tokens could not be extracted."
+            )
             return
 
         try:
@@ -168,4 +177,3 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.DialogCode.Accepted and dlg.result_data:
             self.accounts.append(dlg.result_data)
             self._save_and_refresh()
-

@@ -14,17 +14,20 @@ from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QCursor
 
 from app.core import get_code
+from app.ui.password_dialog import PasswordReauthDialog
+from app.core.logger import log_event
 
 
 class AccountCard(QFrame):
     remove_requested = pyqtSignal(str, str)
     copy_requested = pyqtSignal()
 
-    def __init__(self, name, seed, parent=None):
+    def __init__(self, name, seed, has_password=True, parent=None):
         super().__init__(parent)
         self.setObjectName("accountCard")
         self.account_name = name
         self.seed = seed
+        self.has_password = has_password
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setFixedHeight(62)
 
@@ -61,12 +64,14 @@ class AccountCard(QFrame):
         self.lbl_timer = QLabel("30s")
         self.lbl_timer.setObjectName("timerLabel")
         self.lbl_timer.setFixedWidth(24)
-        self.lbl_timer.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.lbl_timer.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
         top.addWidget(self.lbl_timer)
 
         top.addSpacing(8)
 
-        btn_menu = QPushButton("\u22EE")
+        btn_menu = QPushButton("\u22ee")
         btn_menu.setObjectName("menuBtn")
         btn_menu.setFixedWidth(30)
         btn_menu.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -120,28 +125,59 @@ class AccountCard(QFrame):
             self.copy_requested.emit()
 
     def _show_seed(self):
-        from PyQt6.QtWidgets import QMessageBox
+        if not self.has_password:
+            # Auto-unlock mode: no password set, just log and show
+            log_event("seed_viewed", name=self.account_name)
+            from PyQt6.QtWidgets import QMessageBox
 
-        box = QMessageBox(self)
-        box.setWindowTitle("Seed")
-        box.setText(self.account_name)
-        box.setInformativeText(self.seed)
-        box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        box.exec()
+            box = QMessageBox(self)
+            box.setWindowTitle("Seed")
+            box.setText(self.account_name)
+            box.setInformativeText(self.seed)
+            box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            box.exec()
+            return
+
+        # Password-protected: require re-auth
+        dlg = PasswordReauthDialog(self)
+        if dlg.exec() == PasswordReauthDialog.Accepted:
+            log_event("seed_viewed", name=self.account_name)
+            from PyQt6.QtWidgets import QMessageBox
+
+            box = QMessageBox(self)
+            box.setWindowTitle("Seed")
+            box.setText(self.account_name)
+            box.setInformativeText(self.seed)
+            box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            box.exec()
+        # If rejected, do nothing
 
     def _copy_seed(self):
-        QApplication.clipboard().setText(self.seed)
-        self.copy_requested.emit()
+        if not self.has_password:
+            # Auto-unlock mode: no password set, just log and copy
+            log_event("seed_copied", name=self.account_name)
+            QApplication.clipboard().setText(self.seed)
+            self.copy_requested.emit()
+            return
+
+        # Password-protected: require re-auth
+        dlg = PasswordReauthDialog(self)
+        if dlg.exec() == PasswordReauthDialog.Accepted:
+            log_event("seed_copied", name=self.account_name)
+            QApplication.clipboard().setText(self.seed)
+            self.copy_requested.emit()
+        # If rejected, do nothing
 
     def _confirm_remove(self):
         from PyQt6.QtWidgets import QMessageBox
 
         box = QMessageBox(self)
         box.setWindowTitle("Remove Account")
-        box.setText(f"Remove 2FA for \"{self.account_name}\"?")
+        box.setText(f'Remove 2FA for "{self.account_name}"?')
         box.setInformativeText("This cannot be undone.")
-        box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        box.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
         box.setDefaultButton(QMessageBox.StandardButton.No)
         if box.exec() == QMessageBox.StandardButton.Yes:
             self.remove_requested.emit(self.account_name, self.seed)
-
