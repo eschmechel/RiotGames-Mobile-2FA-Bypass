@@ -142,3 +142,15 @@ Branch off `main` for each phase. Merge to `main` before starting the next phase
 git tag v2.0.0
 git push origin v2.0.0
 ```
+
+---
+
+## Security Notes
+
+- **PyInstaller bytecode:** PyInstaller-packaged executables have extractable Python bytecode.
+  Our secrets are encrypted at rest (AES-256-GCM) with keys in Windows Credential Manager,
+  so bytecode extraction alone does not expose TOTP seeds.
+- **CVE-2025-59042:** PyInstaller < 6.0.0 had a local privilege escalation vulnerability.
+  We require `pyinstaller>=6.0.0` which includes the fix.
+- **Keyring backend:** We use Windows Credential Manager via `keyring` — not the insecure
+  CryptedFileKeyring that had CVE-2012-4571.
