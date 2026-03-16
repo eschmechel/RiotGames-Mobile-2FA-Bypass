@@ -18,6 +18,13 @@ from app.ui.password_dialog import PasswordReauthDialog
 from app.core.logger import log_event
 
 
+def _safe_log(event: str, **kwargs) -> None:
+    try:
+        log_event(event, **kwargs)
+    except Exception:
+        pass
+
+
 class AccountCard(QFrame):
     remove_requested = pyqtSignal(str, str)
     copy_requested = pyqtSignal()
@@ -137,7 +144,7 @@ class AccountCard(QFrame):
     def _show_seed(self):
         if not self.has_password:
             # Auto-unlock mode: no password set, just log and show
-            log_event("seed_viewed", name=self.account_name)
+            _safe_log("seed_viewed", name=self.account_name)
             from PyQt6.QtWidgets import QMessageBox
 
             box = QMessageBox(self)
@@ -150,8 +157,8 @@ class AccountCard(QFrame):
 
         # Password-protected: require re-auth
         dlg = PasswordReauthDialog(self)
-        if dlg.exec() == PasswordReauthDialog.Accepted:
-            log_event("seed_viewed", name=self.account_name)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            _safe_log("seed_viewed", name=self.account_name)
             from PyQt6.QtWidgets import QMessageBox
 
             box = QMessageBox(self)
@@ -165,15 +172,15 @@ class AccountCard(QFrame):
     def _copy_seed(self):
         if not self.has_password:
             # Auto-unlock mode: no password set, just log and copy
-            log_event("seed_copied", name=self.account_name)
+            _safe_log("seed_copied", name=self.account_name)
             QApplication.clipboard().setText(self.seed)
             self.copy_requested.emit()
             return
 
         # Password-protected: require re-auth
         dlg = PasswordReauthDialog(self)
-        if dlg.exec() == PasswordReauthDialog.Accepted:
-            log_event("seed_copied", name=self.account_name)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            _safe_log("seed_copied", name=self.account_name)
             QApplication.clipboard().setText(self.seed)
             self.copy_requested.emit()
         # If rejected, do nothing
