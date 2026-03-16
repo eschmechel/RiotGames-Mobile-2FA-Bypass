@@ -18,6 +18,7 @@ def main():
     app.setStyleSheet(load_stylesheet())
 
     dek = None
+    has_password = False
 
     # Check if it's the first run
     if is_first_run():
@@ -25,6 +26,7 @@ def main():
         dlg = PasswordSetupDialog()
         if dlg.exec() == QDialog.DialogCode.Accepted:
             dek = dlg.dek
+            has_password = True
         else:
             # User canceled setup, exit
             sys.exit(0)
@@ -36,6 +38,7 @@ def main():
             dlg = PasswordSetupDialog()
             if dlg.exec() == QDialog.DialogCode.Accepted:
                 dek = dlg.dek
+                has_password = True
             else:
                 # User canceled setup, exit
                 sys.exit(0)
@@ -43,6 +46,7 @@ def main():
             # We have a config
             if config.get("has_password", False):
                 # Password is set, ask for it
+                has_password = True
                 dlg = PasswordUnlockDialog()
                 if dlg.exec() == QDialog.DialogCode.Accepted:
                     dek = dlg.dek
@@ -67,7 +71,7 @@ def main():
                     sys.exit(1)
 
     # Now we have the DEK, create and show the main window
-    win = MainWindow(dek=dek)
+    win = MainWindow(dek=dek, has_password=has_password)
     win.show()
     sys.exit(app.exec())
 

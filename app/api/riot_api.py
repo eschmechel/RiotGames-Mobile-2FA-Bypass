@@ -21,12 +21,18 @@ def decode_jwt_payload(token):
         return None
 
 
+EXPECTED_ISS = "https://auth.riotgames.com"
+
+
 def is_valid_jwt(token):
     payload = decode_jwt_payload(token)
     if payload is None:
         return False
     exp = payload.get("exp")
     if exp is not None and exp < time.time():
+        return False
+    # Validate issuer claim
+    if payload.get("iss") != EXPECTED_ISS:
         return False
     return True
 

@@ -285,3 +285,119 @@ class PasswordReauthDialog(QDialog):
             save_config(config)
 
         self.accept()
+
+
+class PasswordResetDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Reset Password")
+        self.setFixedSize(400, 350)
+        self.setModal(True)
+        self.dek = None
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+
+        layout.addWidget(QLabel("Enter your current password:"))
+
+        self.current_password = QLineEdit()
+        self.current_password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.current_password.setPlaceholderText("Current password")
+        layout.addWidget(self.current_password)
+
+        layout.addSpacing(12)
+
+        layout.addWidget(QLabel("Enter new password:"))
+
+        self.new_password = QLineEdit()
+        self.new_password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.new_password.setPlaceholderText("New password (8+ chars, 1 number, 1 special)")
+        layout.addWidget(self.new_password)
+
+        self.confirm_password = QLineEdit()
+        self.confirm_password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.confirm_password.setPlaceholderText("Confirm new password")
+        layout.addWidget(self.confirm_password)
+
+        self.remember_checkbox = QCheckBox("Remember me (store key in Windows Credential Manager)")
+        layout.addWidget(self.remember_checkbox)
+
+        button_layout = QHBoxLayout()
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(self.cancel_button)
+
+        self.ok_button = QPushButton("Reset Password")
+        self.ok_button.setDefault(True)
+        self.ok_button.clicked.connect(self.accept_reset)
+        button_layout.addWidget(self.ok_button)
+
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+    def accept_reset(self):
+        current_password = self.current_password.text()
+        new_password = self.new_password.text()
+        confirm = self.confirm_password.text()
+
+        if not current_password or not new_password:
+            QMessageBox.warning(self, "Error", "Please fill in all password fields")
+            return
+
+        if new_password != confirm:
+            QMessageBox.warning(self, "Error", "New passwords do not match")
+            return
+
+        validation_error = validate_password(new_password)
+        if validation_error:
+            QMessageBox.warning(self, "Invalid Password", validation_error)
+            return
+
+        from ..core.storage import load_config
+        config = load_config()
+        if not config:
+            QMessageBox.critical(self, "Error", "Configuration not found")
+            return
+
+        from ..core.auth import verify_password
+        is_valid, _ = verify_password(config["auth_hash"], current_password)
+        if not is_valid:
+            QMessageBox.warning(self, "Error", "Current password is incorrect")
+            return
+
+        from ..core.encryption import derive_kek, decrypt, generate_salt, encrypt
+        import base64
+
+        old_salt = bytes.fromhex(config["salt"])
+        old_encrypted_dek = base64.b64decode(config["encrypted_dek"])
+        old_kek = derive_kek(current_password, old_salt)
+
+        try:
+            dek = decrypt(old_encrypted_dek, old_kek)
+        except Exception:
+            QMessageBox.critical(self, "Error", "Failed to decrypt encryption key")
+            return
+
+        new_salt = generate_salt()
+        new_kek = derive_kek(new_password, new_salt)
+        new_encrypted_dek = encrypt(dek, new_kek)
+
+        from ..core.auth import hash_password
+        new_auth_hash = hash_password(new_password)
+
+        config["salt"] = new_salt.hex()
+        config["encrypted_dek"] = base64.b64encode(new_encrypted_dek).decode('utf-8')
+        config["auth_hash"] = new_auth_hash
+
+        if self.remember_checkbox.isChecked():
+            from ..core.auth import store_dek
+            if not store_dek(dek):
+                QMessageBox.critical(self, "Error", "Failed to store encryption key")
+                return
+
+        from ..core.storage import save_config
+        save_config(config)
+
+        self.dek = dek
+        self.accept()
