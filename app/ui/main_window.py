@@ -10,23 +10,49 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QDialog,
+    QMenuBar,
 )
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor
 
-from app.core import load_accounts, save_accounts, PERIOD
+from app.core import load_accounts, save_accounts, PERIOD, load_config
 from app.api import fetch_riot_id, enable_mfa, verify_mfa
 from app.ui.toast import Toast
 from app.ui.account_card import AccountCard
 from app.ui.manual_add_dialog import ManualAddDialog
 from app.ui.login_browser_dialog import LoginBrowserDialog
+from app.ui.password_dialog import PasswordResetDialog
+
+
+def _create_lock_icon(closed: bool) -> QPixmap:
+    pixmap = QPixmap(24, 24)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    color = QColor("#4a4a4a" if closed else "#888888")
+    painter.setPen(color)
+
+    if closed:
+        painter.drawEllipse(6, 14, 12, 10)
+        painter.drawRect(7, 8, 10, 8)
+        painter.drawLine(12, 8, 12, 5)
+        painter.drawArc(9, 2, 6, 6, 0, 180 * 16)
+    else:
+        painter.drawEllipse(6, 14, 12, 10)
+        painter.drawRect(7, 8, 10, 8)
+    painter.end()
+    return pixmap
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, dek=None):
+    def __init__(self, dek=None, has_password=True):
         super().__init__()
         self.setWindowTitle("Riot 2FA")
         self.setMinimumSize(560, 300)
         self.resize(560, 400)
+
+        self.dek = dek
+        self.has_password = has_password
 
         if dek is not None:
             self.accounts = load_accounts(dek)
@@ -34,6 +60,8 @@ class MainWindow(QMainWindow):
             self.accounts = load_accounts()
         self.cards: list[AccountCard] = []
         self._last_step = int(time.time()) // PERIOD
+
+        self._setup_menu()
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -46,6 +74,10 @@ class MainWindow(QMainWindow):
         title.setObjectName("titleLabel")
         hdr.addWidget(title)
         hdr.addStretch()
+
+        self.lock_icon = QLabel()
+        self._update_lock_icon()
+        hdr.addWidget(self.lock_icon)
 
         b1 = QPushButton("Add via Login")
         b1.setObjectName("addLoginBtn")
@@ -82,6 +114,40 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self._tick)
         self.timer.start(50)
 
+    def _setup_menu(self):
+        menubar = self.menuBar()
+        settings_menu = menubar.addMenu("Settings")
+
+        reset_action = settings_menu.addAction("Reset Password")
+        reset_action.triggered.connect(self._reset_password)
+
+        settings_menu.addSeparator()
+
+        exit_action = settings_menu.addAction("Exit")
+        exit_action.triggered.connect(self.close)
+
+    def _update_lock_icon(self):
+        pixmap = _create_lock_icon(self.has_password)
+        self.lock_icon.setPixmap(pixmap)
+        if self.has_password:
+            self.lock_icon.setToolTip(
+                "Password protected" + (" - auto-unlock enabled" if self.dek else "")
+            )
+        else:
+            self.lock_icon.setToolTip("No password set - machine-bound encryption only")
+
+    def _reset_password(self):
+        dlg = PasswordResetDialog(self)
+        if dlg.exec() == QDialog.DialogCode.Accepted and dlg.dek:
+            self.dek = dlg.dek
+            self.has_password = True
+            self._update_lock_icon()
+            self.accounts = load_accounts(self.dek)
+            self._populate()
+            QMessageBox.information(
+                self, "Success", "Password has been reset successfully."
+            )
+
     def _populate(self):
         for c in self.cards:
             c.setParent(None)
@@ -102,7 +168,9 @@ class MainWindow(QMainWindow):
             self.scroll_area_layout.addWidget(lbl)
         else:
             for acct in self.accounts:
-                card = AccountCard(acct["name"], acct["seed"])
+                card = AccountCard(
+                    acct["name"], acct["seed"], has_password=self.has_password
+                )
                 card.remove_requested.connect(self._remove_account)
                 card.copy_requested.connect(
                     lambda: self.toast.popup("Copied to clipboard")

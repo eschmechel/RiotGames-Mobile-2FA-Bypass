@@ -124,6 +124,16 @@ class AccountCard(QFrame):
             QApplication.clipboard().setText(txt)
             self.copy_requested.emit()
 
+            # Auto-clear clipboard after 30 seconds
+            from PyQt6.QtCore import QTimer
+
+            QTimer.singleShot(30000, self._clear_clipboard)
+
+    def _clear_clipboard(self):
+        clipboard = QApplication.clipboard()
+        if clipboard.text() == self.lbl_code.text():
+            clipboard.setText("")
+
     def _show_seed(self):
         if not self.has_password:
             # Auto-unlock mode: no password set, just log and show
