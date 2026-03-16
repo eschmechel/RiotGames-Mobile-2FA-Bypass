@@ -13,9 +13,42 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication
 
-from ..core.auth import validate_password, hash_password
-from ..core.storage import save_config
-from ..core.encryption import generate_dek, generate_salt, derive_kek, encrypt
+from ..core.auth import validate_password, hash_password, verify_password
+from ..core.storage import save_config, load_config
+from ..core.encryption import generate_dek, generate_salt, derive_kek, decrypt, encrypt
+
+
+def _verify_password_and_get_dek(parent, password: str) -> tuple[bool, bytes | None]:
+    """Shared helper to verify password and decrypt DEK. Returns (success, dek)."""
+    if not password:
+        QMessageBox.warning(parent, "Error", "Please enter your password")
+        return False, None
+
+    config = load_config()
+    if not config:
+        QMessageBox.critical(parent, "Error", "Configuration not found")
+        return False, None
+
+    is_valid, needs_rehash = verify_password(config["auth_hash"], password)
+    if not is_valid:
+        QMessageBox.warning(parent, "Error", "Incorrect password")
+        return False, None
+
+    salt = bytes.fromhex(config["salt"])
+    encrypted_dek = base64.b64decode(config["encrypted_dek"])
+    kek = derive_kek(password, salt)
+    try:
+        dek = decrypt(encrypted_dek, kek)
+    except Exception:
+        QMessageBox.critical(parent, "Error", "Failed to decrypt encryption key")
+        return False, None
+
+    if needs_rehash:
+        new_hash = hash_password(password)
+        config["auth_hash"] = new_hash
+        save_config(config)
+
+    return True, dek
 
 
 class PasswordSetupDialog(QDialog):
@@ -154,52 +187,11 @@ class PasswordUnlockDialog(QDialog):
 
     def accept_unlock(self):
         password = self.password_input.text()
-        if not password:
-            QMessageBox.warning(self, "Error", "Please enter your password")
+        success, dek = _verify_password_and_get_dek(self, password)
+        if not success:
             return
 
-        # Load config to get salt, encrypted_dek, and auth_hash
-        from ..core.storage import load_config
-
-        config = load_config()
-        if not config:
-            QMessageBox.critical(self, "Error", "Configuration not found")
-            return
-
-        # Verify password
-        from ..core.auth import verify_password
-
-        is_valid, needs_rehash = verify_password(config["auth_hash"], password)
-        if not is_valid:
-            QMessageBox.warning(self, "Error", "Incorrect password")
-            return
-
-        # If needs rehash, we'll update the hash later (for now just continue)
-        # Derive KEK and decrypt DEK
-        from ..core.encryption import derive_kek, decrypt
-        import base64
-
-        salt = bytes.fromhex(config["salt"])
-        encrypted_dek = base64.b64decode(config["encrypted_dek"])
-        kek = derive_kek(password, salt)
-        try:
-            dek = decrypt(encrypted_dek, kek)
-        except Exception:
-            QMessageBox.critical(self, "Error", "Failed to decrypt encryption key")
-            return
-
-        # Store the DEK in memory for the session (we'll pass it to main)
         self.dek = dek
-
-        # If rehash is needed, update the stored hash
-        if needs_rehash:
-            from ..core.auth import hash_password
-            from ..core.storage import save_config
-
-            new_hash = hash_password(password)
-            config["auth_hash"] = new_hash
-            save_config(config)
-
         self.accept()
 
 
@@ -238,52 +230,11 @@ class PasswordReauthDialog(QDialog):
 
     def accept_reauth(self):
         password = self.password_input.text()
-        if not password:
-            QMessageBox.warning(self, "Error", "Please enter your password")
+        success, dek = _verify_password_and_get_dek(self, password)
+        if not success:
             return
 
-        # Load config to get salt, encrypted_dek, and auth_hash
-        from ..core.storage import load_config
-
-        config = load_config()
-        if not config:
-            QMessageBox.critical(self, "Error", "Configuration not found")
-            return
-
-        # Verify password
-        from ..core.auth import verify_password
-
-        is_valid, needs_rehash = verify_password(config["auth_hash"], password)
-        if not is_valid:
-            QMessageBox.warning(self, "Error", "Incorrect password")
-            return
-
-        # If needs rehash, we'll update the hash later
-        # Derive KEK and decrypt DEK
-        from ..core.encryption import derive_kek, decrypt
-        import base64
-
-        salt = bytes.fromhex(config["salt"])
-        encrypted_dek = base64.b64decode(config["encrypted_dek"])
-        kek = derive_kek(password, salt)
-        try:
-            dek = decrypt(encrypted_dek, kek)
-        except Exception:
-            QMessageBox.critical(self, "Error", "Failed to decrypt encryption key")
-            return
-
-        # Store the DEK in memory for the session
         self.dek = dek
-
-        # If rehash is needed, update the stored hash
-        if needs_rehash:
-            from ..core.auth import hash_password
-            from ..core.storage import save_config
-
-            new_hash = hash_password(password)
-            config["auth_hash"] = new_hash
-            save_config(config)
-
         self.accept()
 
 
@@ -312,7 +263,9 @@ class PasswordResetDialog(QDialog):
 
         self.new_password = QLineEdit()
         self.new_password.setEchoMode(QLineEdit.EchoMode.Password)
-        self.new_password.setPlaceholderText("New password (8+ chars, 1 number, 1 special)")
+        self.new_password.setPlaceholderText(
+            "New password (8+ chars, 1 number, 1 special)"
+        )
         layout.addWidget(self.new_password)
 
         self.confirm_password = QLineEdit()
@@ -320,7 +273,9 @@ class PasswordResetDialog(QDialog):
         self.confirm_password.setPlaceholderText("Confirm new password")
         layout.addWidget(self.confirm_password)
 
-        self.remember_checkbox = QCheckBox("Remember me (store key in Windows Credential Manager)")
+        self.remember_checkbox = QCheckBox(
+            "Remember me (store key in Windows Credential Manager)"
+        )
         layout.addWidget(self.remember_checkbox)
 
         button_layout = QHBoxLayout()
@@ -336,38 +291,42 @@ class PasswordResetDialog(QDialog):
         layout.addLayout(button_layout)
         self.setLayout(layout)
 
-    def accept_reset(self):
-        current_password = self.current_password.text()
-        new_password = self.new_password.text()
-        confirm = self.confirm_password.text()
+    def _validate_inputs(
+        self, current_password: str, new_password: str, confirm: str
+    ) -> bool:
+        """Validate password inputs.
 
+        Returns:
+            True if all inputs are valid, False otherwise (shows error dialog on failure).
+        """
         if not current_password or not new_password:
             QMessageBox.warning(self, "Error", "Please fill in all password fields")
-            return
+            return False
 
         if new_password != confirm:
             QMessageBox.warning(self, "Error", "New passwords do not match")
-            return
+            return False
 
         validation_error = validate_password(new_password)
         if validation_error:
             QMessageBox.warning(self, "Invalid Password", validation_error)
-            return
+            return False
 
-        from ..core.storage import load_config
+        return True
+
+    def _rotate_keys(
+        self, current_password: str, new_password: str
+    ) -> tuple[bool, bytes | None]:
+        """Rotate encryption keys. Returns (success, dek)."""
         config = load_config()
         if not config:
             QMessageBox.critical(self, "Error", "Configuration not found")
-            return
+            return False, None
 
-        from ..core.auth import verify_password
         is_valid, _ = verify_password(config["auth_hash"], current_password)
         if not is_valid:
             QMessageBox.warning(self, "Error", "Current password is incorrect")
-            return
-
-        from ..core.encryption import derive_kek, decrypt, generate_salt, encrypt
-        import base64
+            return False, None
 
         old_salt = bytes.fromhex(config["salt"])
         old_encrypted_dek = base64.b64decode(config["encrypted_dek"])
@@ -377,27 +336,40 @@ class PasswordResetDialog(QDialog):
             dek = decrypt(old_encrypted_dek, old_kek)
         except Exception:
             QMessageBox.critical(self, "Error", "Failed to decrypt encryption key")
-            return
+            return False, None
 
         new_salt = generate_salt()
         new_kek = derive_kek(new_password, new_salt)
         new_encrypted_dek = encrypt(dek, new_kek)
 
-        from ..core.auth import hash_password
         new_auth_hash = hash_password(new_password)
 
         config["salt"] = new_salt.hex()
-        config["encrypted_dek"] = base64.b64encode(new_encrypted_dek).decode('utf-8')
+        config["encrypted_dek"] = base64.b64encode(new_encrypted_dek).decode("utf-8")
         config["auth_hash"] = new_auth_hash
 
         if self.remember_checkbox.isChecked():
             from ..core.auth import store_dek
+
             if not store_dek(dek):
                 QMessageBox.critical(self, "Error", "Failed to store encryption key")
-                return
+                return False, None
 
-        from ..core.storage import save_config
         save_config(config)
+
+        return True, dek
+
+    def accept_reset(self):
+        current_password = self.current_password.text()
+        new_password = self.new_password.text()
+        confirm = self.confirm_password.text()
+
+        if not self._validate_inputs(current_password, new_password, confirm):
+            return
+
+        success, dek = self._rotate_keys(current_password, new_password)
+        if not success:
+            return
 
         self.dek = dek
         self.accept()
