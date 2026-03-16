@@ -105,7 +105,7 @@ Each phase is developed on its own branch and merged via PR:
 | `phase/1-core-infrastructure`  | Phase 1                 | Yes         |
 | `phase/2-storage-layer`        | Phase 2                 | Yes         |
 | `phase/3-auth-ui`              | Phase 3                 | Yes         |
-| `phase/4-security-hardening`   | Phase 4                 | Yes         |
+| `phase/4-security-hardening`    | Phase 4                 | Yes         |
 | `phase/5-cicd`                 | Phase 5                 | Yes         |
 | `phase/6-docs`                 | Phase 6                 | Yes         |
 
@@ -121,7 +121,7 @@ Branch off `main` for each phase. Merge to `main` before starting the next phase
 | PyQt6-WebEngine| latest     | Embedded browser for OAuth login         |
 | requests       | latest     | HTTP client for Riot API                 |
 | cryptography   | >=41.0.0   | AES-256-GCM, PBKDF2 key derivation       |
-| keyring        | >=24.0.0   | Windows Credential Manager integration   |
+| keyring        | >=24.0.0   | Windows Credential Manager integration     |
 | argon2-cffi    | >=25.1.0   | Argon2id password hashing                |
 | pyinstaller    | >=6.0.0    | Build tool (replaces Nuitka)             |
 
@@ -142,3 +142,15 @@ Branch off `main` for each phase. Merge to `main` before starting the next phase
 git tag v2.0.0
 git push origin v2.0.0
 ```
+
+---
+
+## Security Notes
+
+- **PyInstaller bytecode:** PyInstaller-packaged executables have extractable Python bytecode.
+  Our secrets are encrypted at rest (AES-256-GCM) with keys in Windows Credential Manager,
+  so bytecode extraction alone does not expose TOTP seeds.
+- **CVE-2025-59042:** PyInstaller < 6.0.0 had a local privilege escalation vulnerability.
+  We require `pyinstaller>=6.0.0` which includes the fix.
+- **Keyring backend:** We use Windows Credential Manager via `keyring` — not the insecure
+  CryptedFileKeyring that had CVE-2012-4571.
