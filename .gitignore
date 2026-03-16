@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+
+# Logs
+*.log
+
+# Build outputs
+*.exe
+
+# Pair programming
+AGENTS.md
+PLAN.md
