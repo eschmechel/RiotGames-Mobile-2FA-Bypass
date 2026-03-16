@@ -133,6 +133,14 @@ QLineEdit {
 QLineEdit:focus {
     border-color: #3a6a8a;
 }
+QLineEdit#searchInput {
+    background-color: #0e0e14;
+    font-size: 12px;
+    padding: 8px 12px;
+}
+QLineEdit#searchInput:focus {
+    border-color: #4a8ab0;
+}
 QFrame#accountCard {
     background-color: #111116;
     border: 1px solid #1a1a22;
