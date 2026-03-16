@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication, QDialog
 from app.styles import load_stylesheet
 from app.ui.main_window import MainWindow
 from app.ui.password_dialog import PasswordSetupDialog, PasswordUnlockDialog
-from app.core.storage import is_first_run, load_config
+from app.core.storage import is_first_run, load_config, needs_migration
 from app.core.auth import load_dek
 
 
@@ -53,18 +53,32 @@ def main():
                 # No password set, try to get DEK from keyring (for auto-unlock)
                 dek = load_dek()
                 if dek is None:
-                    # No DEK in keyring, we need to create one?
-                    # This should not happen if we have a config with has_password=False.
-                    # But if it does, we treat as first run?
-                    # Let's show a message and exit.
-                    from PyQt6.QtWidgets import QMessageBox
+                    # Check if migration is needed (plaintext accounts exist)
+                    if needs_migration():
+                        # Force password setup to migrate plaintext accounts
+                        from PyQt6.QtWidgets import QMessageBox
 
-                    QMessageBox.critical(
-                        None,
-                        "Error",
-                        "No encryption key found. Please reset the application.",
-                    )
-                    sys.exit(1)
+                        QMessageBox.warning(
+                            None,
+                            "Security Update Required",
+                            "Your accounts need to be re-encrypted. "
+                            "Please set a password to secure your accounts.",
+                        )
+                        dlg = PasswordSetupDialog()
+                        if dlg.exec() == QDialog.DialogCode.Accepted:
+                            dek = dlg.dek
+                            has_password = True
+                        else:
+                            sys.exit(0)
+                    else:
+                        from PyQt6.QtWidgets import QMessageBox
+
+                        QMessageBox.critical(
+                            None,
+                            "Error",
+                            "No encryption key found. Please reset the application.",
+                        )
+                        sys.exit(1)
 
     # Now we have the DEK, create and show the main window
     win = MainWindow(dek=dek, has_password=has_password)
