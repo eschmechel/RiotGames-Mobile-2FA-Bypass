@@ -159,6 +159,16 @@ The executable will be in `dist/Riot2FA.exe`.
 
 ---
 
+### 🙌 Support
+
+If you find this tool useful, consider supporting its development!
+
+<a href="https://ko-fi.com/eschmechel">
+  <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi" />
+</a>
+
+---
+
 ### 🙌 Credits
 
 - **Original Author**: [Sysy's](https://github.com/Askin242)
