@@ -73,16 +73,17 @@ def load_accounts(dek: bytes | None = None) -> list[dict[str, Any]]:
         encrypted_data = json.load(f)
 
     if isinstance(encrypted_data, list):
-        if dek is not None and len(encrypted_data) > 0:
-            plaintext = json.dumps(encrypted_data, ensure_ascii=False).encode("utf-8")
+        accounts: list[dict[str, Any]] = encrypted_data
+        if dek is not None and len(accounts) > 0:
+            plaintext = json.dumps(accounts, ensure_ascii=False).encode("utf-8")
             ciphertext = encrypt(plaintext, dek)
-            encrypted_data = {
+            wrapped = {
                 "version": CONFIG_VERSION,
                 "data": base64.b64encode(ciphertext).decode("utf-8"),
             }
             with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
-                json.dump(encrypted_data, f, indent=2, ensure_ascii=False)
-        return encrypted_data
+                json.dump(wrapped, f, indent=2, ensure_ascii=False)
+        return accounts
 
     if dek is None:
         return []

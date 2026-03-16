@@ -1,4 +1,5 @@
 import base64
+import random
 import secrets
 import string
 from PyQt6.QtWidgets import (
@@ -19,9 +20,12 @@ from ..core.encryption import generate_dek, generate_salt, derive_kek, decrypt, 
 
 def _generate_secure_password(length: int = 16) -> str:
     """Generate a secure random password meeting app requirements."""
+    if length < 8:
+        length = 8
+
     letters = string.ascii_letters
     digits = string.digits
-    special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    special = "!@#$%^&*()-_=+[]{}|;:,.<>?"
     all_chars = letters + digits + special
 
     password = [
@@ -33,7 +37,7 @@ def _generate_secure_password(length: int = 16) -> str:
     for _ in range(length - 3):
         password.append(secrets.choice(all_chars))
 
-    secrets.SystemRandom().shuffle(password)
+    random.shuffle(password)
     return "".join(password)
 
 
@@ -71,12 +75,13 @@ def _verify_password_and_get_dek(parent, password: str) -> tuple[bool, bytes | N
 
 
 class PasswordSetupDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, initial_accounts=None):
         super().__init__(parent)
         self.setWindowTitle("Set up Riot 2FA")
         self.setFixedSize(400, 300)
         self.setModal(True)
         self.dek = None
+        self.initial_accounts = initial_accounts or []
         self.setup_ui()
 
     def setup_ui(self):
@@ -142,7 +147,6 @@ class PasswordSetupDialog(QDialog):
         password = _generate_secure_password()
         self.password_input.setText(password)
         self.confirm_input.setText(password)
-        self.show_password_checkbox.setChecked(True)
 
     def _toggle_password_visibility(self, checked):
         mode = QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
@@ -191,10 +195,10 @@ class PasswordSetupDialog(QDialog):
                 QMessageBox.critical(self, "Error", "Failed to store encryption key")
                 return
 
-        # Initialize an empty accounts file
+        # Initialize accounts file (migrate existing plaintext if any)
         from ..core.storage import save_accounts
 
-        save_accounts([], self.dek)
+        save_accounts(self.initial_accounts, self.dek)
 
         self.accept()
 
@@ -354,7 +358,6 @@ class PasswordResetDialog(QDialog):
         password = _generate_secure_password()
         self.new_password.setText(password)
         self.confirm_password.setText(password)
-        self.show_password_checkbox.setChecked(True)
 
     def _toggle_password_visibility(self, checked):
         mode = QLineEdit.EchoMode.Normal if checked else QLineEdit.EchoMode.Password
