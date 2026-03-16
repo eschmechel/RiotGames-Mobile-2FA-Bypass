@@ -1,4 +1,11 @@
-from app.core.storage import load_accounts, save_accounts
+from app.core.storage import (
+    load_accounts,
+    save_accounts,
+    load_config,
+    save_config,
+    is_first_run,
+    detect_legacy,
+)
 from app.core.auth_totp import PERIOD, get_code, extract_seed
 from app.core.encryption import (
     encrypt,
@@ -25,6 +32,10 @@ from app.core.logger import log_event
 __all__ = [
     "load_accounts",
     "save_accounts",
+    "load_config",
+    "save_config",
+    "is_first_run",
+    "detect_legacy",
     "PERIOD",
     "get_code",
     "extract_seed",
