@@ -55,8 +55,11 @@ class LoginBrowserDialog(QDialog):
         main_layout.addLayout(toolbar)
 
         instructions = QLabel(
-            "  Log in with your Riot account. The app will automatically detect when login is complete.  "
-            "If the browser doesn't work, click 'Open in System Browser' and manually copy the id_token cookie and CSRF token."
+            "  Log in with your Riot account. The app will"
+            " automatically detect when login is complete."
+            "  If the browser doesn't work, click"
+            " 'Open in System Browser' and manually copy"
+            " the id_token cookie and CSRF token."
         )
         instructions.setStyleSheet(
             "background-color:#1a1a0e; color:#aaaa55; font-size:11px; padding:6px;"
