@@ -9,6 +9,7 @@ from app.ui.password_dialog import PasswordSetupDialog, PasswordUnlockDialog
 from app.core.storage import is_first_run, load_config, needs_migration, load_accounts
 from app.core.auth import load_dek
 from app.core.logger import log_event
+from app.i18n import init as init_i18n
 
 
 def main():
@@ -18,6 +19,8 @@ def main():
         app.setWindowIcon(QIcon(str(icon_path)))
     app.setStyle("Fusion")
     app.setStyleSheet(load_stylesheet())
+
+    init_i18n()
 
     dek = None
     has_password = False

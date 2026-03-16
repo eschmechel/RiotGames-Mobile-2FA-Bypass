@@ -1,0 +1,53 @@
+{
+    "app": {
+        "title": "Riot 2FA Bypass",
+        "no_accounts": "No accounts yet — add one with the buttons above",
+        "no_search_results": "No accounts match your search"
+    },
+    "buttons": {
+        "add_via_login": "Add via Login",
+        "add_manually": "Add Manually"
+    },
+    "menu": {
+        "settings": "Settings",
+        "reset_password": "Reset Password",
+        "minimize_to_tray": "Minimize to tray on close",
+        "start_with_windows": "Start with Windows",
+        "notifications": "Desktop notifications",
+        "language": "Language",
+        "exit": "Exit"
+    },
+    "tray": {
+        "show_window": "Show Window",
+        "copy_code": "Copy 2FA Code",
+        "no_accounts": "No accounts"
+    },
+    "notifications": {
+        "account_added": "Account Added",
+        "account_removed": "Account Removed",
+        "code_expiring": "Code Expiring Soon",
+        "code_expiring_message": "Your 2FA code will refresh in 5 seconds"
+    },
+    "dialogs": {
+        "setup_title": "Set up Riot 2FA Bypass",
+        "unlock_title": "Unlock Riot 2FA Bypass",
+        "login_title": "Riot Account Login — Riot 2FA Bypass",
+        "add_manually_title": "Add Account Manually",
+        "reset_title": "Reset Password",
+        "reauth_title": "Re-authenticate"
+    },
+    "messages": {
+        "success_added": "2FA added for {name}",
+        "success_reset": "Password has been reset successfully.",
+        "error_no_key": "No encryption key found. Please reset the application.",
+        "error_migration": "Your accounts need to be re-encrypted. Please set a password to secure your accounts.",
+        "passwords_dont_match": "Passwords do not match",
+        "invalid_password": "Invalid Password",
+        "incorrect_password": "Incorrect password",
+        "remove_confirm": "Remove 2FA for {name}?",
+        "remove_warning": "This cannot be undone."
+    },
+    "search": {
+        "placeholder": "Search accounts..."
+    }
+}

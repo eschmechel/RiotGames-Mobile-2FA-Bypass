@@ -1,0 +1,53 @@
+{
+    "app": {
+        "title": "Riot 2FA Bypass",
+        "no_accounts": "Aucun compte pour l'instant — ajoutez-en un avec les boutons ci-dessus",
+        "no_search_results": "Aucun compte ne correspond à votre recherche"
+    },
+    "buttons": {
+        "add_via_login": "Ajouter via Login",
+        "add_manually": "Ajouter Manuellement"
+    },
+    "menu": {
+        "settings": "Paramètres",
+        "reset_password": "Réinitialiser le mot de passe",
+        "minimize_to_tray": "Réduire dans la barre système à la fermeture",
+        "start_with_windows": "Démarrer avec Windows",
+        "notifications": "Notifications bureau",
+        "language": "Langue",
+        "exit": "Quitter"
+    },
+    "tray": {
+        "show_window": "Afficher la fenêtre",
+        "copy_code": "Copier le code 2FA",
+        "no_accounts": "Aucun compte"
+    },
+    "notifications": {
+        "account_added": "Compte ajouté",
+        "account_removed": "Compte supprimé",
+        "code_expiring": "Code sur le point d'expirer",
+        "code_expiring_message": "Votre code 2FA sera actualisé dans 5 secondes"
+    },
+    "dialogs": {
+        "setup_title": "Configurer Riot 2FA Bypass",
+        "unlock_title": "Déverrouiller Riot 2FA Bypass",
+        "login_title": "Connexion Riot — Riot 2FA Bypass",
+        "add_manually_title": "Ajouter un compte manuellement",
+        "reset_title": "Réinitialiser le mot de passe",
+        "reauth_title": "Ré-authentifier"
+    },
+    "messages": {
+        "success_added": "2FA ajouté pour {name}",
+        "success_reset": "Le mot de passe a été réinitialisé avec succès.",
+        "error_no_key": "Aucune clé de chiffrement trouvée. Veuillez réinitialiser l'application.",
+        "error_migration": "Vos comptes doivent être rechiffrés. Veuillez définir un mot de passe pour sécuriser vos comptes.",
+        "passwords_dont_match": "Les mots de passe ne correspondent pas",
+        "invalid_password": "Mot de passe invalide",
+        "incorrect_password": "Mot de passe incorrect",
+        "remove_confirm": "Supprimer 2FA pour {name} ?",
+        "remove_warning": "Cette action est irréversible."
+    },
+    "search": {
+        "placeholder": "Rechercher des comptes..."
+    }
+}

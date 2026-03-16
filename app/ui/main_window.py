@@ -28,9 +28,12 @@ from app.core import (
     set_auto_start,
     get_notifications_enabled,
     set_notifications_enabled,
+    get_language,
+    set_language,
     get_code,
 )
 from app.core.logger import log_event
+from app.i18n import get_available_languages
 from app.api import fetch_riot_id, enable_mfa, verify_mfa
 from app.ui.toast import Toast
 from app.ui.account_card import AccountCard
@@ -169,6 +172,17 @@ class MainWindow(QMainWindow):
         self._notifications_action.setChecked(get_notifications_enabled())
         self._notifications_action.triggered.connect(self._toggle_notifications)
 
+        self._language_menu = QMenu("Language", self)
+        current_lang = get_language()
+        for lang_code, lang_name in get_available_languages().items():
+            action = self._language_menu.addAction(lang_name)
+            action.setCheckable(True)
+            action.setChecked(lang_code == current_lang)
+            action.triggered.connect(
+                lambda checked, lc=lang_code: self._change_language(lc)
+            )
+        settings_menu.addMenu(self._language_menu)
+
         settings_menu.addSeparator()
 
         exit_action = settings_menu.addAction("Exit")
@@ -188,6 +202,17 @@ class MainWindow(QMainWindow):
         self._notifications_action.setChecked(enabled)
         if enabled:
             self._expiry_notified = False
+
+    def _change_language(self, lang_code: str) -> None:
+        set_language(lang_code)
+        for action in self._language_menu.actions():
+            action.setChecked(
+                action.text() == get_available_languages().get(lang_code, "")
+            )
+        self._rebuild_ui()
+
+    def _rebuild_ui(self) -> None:
+        self._update_tray_menu()
 
     def _show_notification(self, title: str, message: str) -> None:
         if not get_notifications_enabled():
