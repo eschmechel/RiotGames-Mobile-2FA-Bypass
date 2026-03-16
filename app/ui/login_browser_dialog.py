@@ -1,6 +1,14 @@
 import re
+import webbrowser
 
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel
+from PyQt6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+)
 from PyQt6.QtCore import QTimer, QUrl
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
@@ -11,23 +19,57 @@ from app.api import is_valid_jwt
 class LoginBrowserDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Riot Account Login")
+        self.setWindowTitle("Riot Account Login — Riot 2FA")
         self.resize(960, 720)
         self.cookies = {}
         self.csrf_token = None
         self.id_token = None
         self._detected = False
+        self._current_url = "https://account.riotgames.com/"
 
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(0)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        toolbar = QHBoxLayout()
+        toolbar.setContentsMargins(8, 4, 8, 4)
+        toolbar.setSpacing(8)
+
+        url_label = QLabel("URL:")
+        url_label.setStyleSheet("color:#888;")
+        toolbar.addWidget(url_label)
+
+        self.url_input = QLineEdit()
+        self.url_input.setText(self._current_url)
+        self.url_input.setReadOnly(True)
+        self.url_input.setStyleSheet(
+            "background-color:#1a1a1a; color:#888; border:1px solid #333; padding:4px;"
+        )
+        toolbar.addWidget(self.url_input)
+
+        self.open_browser_btn = QPushButton("Open in System Browser")
+        self.open_browser_btn.setFixedWidth(140)
+        self.open_browser_btn.clicked.connect(self._open_system_browser)
+        toolbar.addWidget(self.open_browser_btn)
+
+        main_layout.addLayout(toolbar)
+
+        instructions = QLabel(
+            "  Log in with your Riot account. The app will automatically detect when login is complete.  "
+            "If the browser doesn't work, click 'Open in System Browser' and manually copy the id_token cookie and CSRF token."
+        )
+        instructions.setStyleSheet(
+            "background-color:#1a1a0e; color:#aaaa55; font-size:11px; padding:6px;"
+        )
+        instructions.setWordWrap(True)
+        main_layout.addWidget(instructions)
 
         self.status = QLabel("  Waiting for login...")
         self.status.setFixedHeight(28)
         self.status.setStyleSheet(
             "background-color:#111118; color:#666677; font-size:11px; padding-left:10px;"
         )
-        lay.addWidget(self.status)
+        main_layout.addWidget(self.status)
 
         self.profile = QWebEngineProfile("riot_2fa_login", self)
         self.profile.cookieStore().deleteAllCookies()
@@ -36,11 +78,21 @@ class LoginBrowserDialog(QDialog):
         self._page = QWebEnginePage(self.profile, self)
         self.browser = QWebEngineView(self)
         self.browser.setPage(self._page)
-        lay.addWidget(self.browser)
+        main_layout.addWidget(self.browser)
 
         self._page.urlChanged.connect(self._url_changed)
         self._page.loadFinished.connect(self._load_finished)
-        self.browser.setUrl(QUrl("https://account.riotgames.com/"))
+        self.browser.setUrl(QUrl(self._current_url))
+
+    def _open_system_browser(self):
+        webbrowser.open(self._current_url)
+        self.status.setText(
+            "  Opened in system browser. After logging in manually, copy your id_token cookie "
+            "and CSRF token, then paste them into the app."
+        )
+        self.status.setStyleSheet(
+            "background-color:#1a1a0e; color:#aaaa55; font-size:11px; padding-left:10px;"
+        )
 
     def _cleanup_browser(self):
         self._page.disconnect()
@@ -60,6 +112,8 @@ class LoginBrowserDialog(QDialog):
             QTimer.singleShot(300, self._try_detect)
 
     def _url_changed(self, url):
+        self._current_url = url.toString()
+        self.url_input.setText(self._current_url)
         QTimer.singleShot(500, self._try_detect)
 
     def _load_finished(self, ok):
