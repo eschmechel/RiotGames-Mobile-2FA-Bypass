@@ -191,3 +191,17 @@ def set_notifications_enabled(enabled: bool) -> None:
     config = load_config() or {}
     config["notifications_enabled"] = enabled
     save_config(config)
+
+
+def get_language() -> str:
+    config = load_config()
+    return config.get("language", "en") if config else "en"
+
+
+def set_language(lang: str) -> None:
+    from app.i18n import set_language as i18n_set_language
+
+    config = load_config() or {}
+    config["language"] = lang
+    save_config(config)
+    i18n_set_language(lang)

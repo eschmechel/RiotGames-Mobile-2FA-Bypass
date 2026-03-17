@@ -20,7 +20,7 @@ class LoginBrowserDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Riot Account Login — Riot 2FA Bypass")
-        self.resize(960, 720)
+        self.resize(1100, 720)
         self.cookies = {}
         self.csrf_token = None
         self.id_token = None

@@ -28,9 +28,12 @@ from app.core import (
     set_auto_start,
     get_notifications_enabled,
     set_notifications_enabled,
+    get_language,
+    set_language,
     get_code,
 )
 from app.core.logger import log_event
+from app.i18n import get_available_languages
 from app.api import fetch_riot_id, enable_mfa, verify_mfa
 from app.ui.toast import Toast
 from app.ui.account_card import AccountCard
@@ -141,7 +144,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._tick)
-        self.timer.start(50)
+        self.timer.start(200)
 
         self._setup_tray()
 
@@ -169,14 +172,29 @@ class MainWindow(QMainWindow):
         self._notifications_action.setChecked(get_notifications_enabled())
         self._notifications_action.triggered.connect(self._toggle_notifications)
 
+        self._language_menu = QMenu("Language", self)
+        current_lang = get_language()
+        for lang_code, lang_name in get_available_languages().items():
+            action = self._language_menu.addAction(lang_name)
+            action.setCheckable(True)
+            action.setChecked(lang_code == current_lang)
+            action.triggered.connect(
+                lambda checked, lc=lang_code: self._change_language(lc)
+            )
+        settings_menu.addMenu(self._language_menu)
+
         settings_menu.addSeparator()
 
+        logout_action = settings_menu.addAction("Logout")
+        logout_action.triggered.connect(self._logout)
+
         exit_action = settings_menu.addAction("Exit")
-        exit_action.triggered.connect(self.close)
+        exit_action.triggered.connect(self._quit_completely)
 
     def _toggle_minimize_to_tray(self, enabled):
         set_minimize_to_tray(enabled)
         self._minimize_action.setChecked(enabled)
+        self._update_tray_menu()
 
     def _toggle_auto_start_menu(self, enabled):
         set_auto_start(enabled)
@@ -188,6 +206,13 @@ class MainWindow(QMainWindow):
         self._notifications_action.setChecked(enabled)
         if enabled:
             self._expiry_notified = False
+
+    def _change_language(self, lang_code: str):
+        set_language(lang_code)
+        self._minimize_action.setChecked(get_minimize_to_tray())
+        self._auto_start_action.setChecked(get_auto_start())
+        self._notifications_action.setChecked(get_notifications_enabled())
+        self._update_tray_menu()
 
     def _show_notification(self, title: str, message: str) -> None:
         if not get_notifications_enabled():
@@ -242,17 +267,35 @@ class MainWindow(QMainWindow):
         minimize_action = settings_menu.addAction("Minimize to tray on close")
         minimize_action.setCheckable(True)
         minimize_action.setChecked(get_minimize_to_tray())
-        minimize_action.triggered.connect(set_minimize_to_tray)
+        minimize_action.triggered.connect(
+            lambda enabled: self._toggle_minimize_to_tray(enabled)
+        )
 
         auto_start_action = settings_menu.addAction("Start with Windows")
         auto_start_action.setCheckable(True)
         auto_start_action.setChecked(get_auto_start())
-        auto_start_action.triggered.connect(self._toggle_auto_start)
+        auto_start_action.triggered.connect(self._toggle_auto_start_menu)
+
+        notifications_action = settings_menu.addAction("Desktop notifications")
+        notifications_action.setCheckable(True)
+        notifications_action.setChecked(get_notifications_enabled())
+        notifications_action.triggered.connect(self._toggle_notifications)
+
+        tray_lang_menu = QMenu("Language", self)
+        current_lang = get_language()
+        for lang_code, lang_name in get_available_languages().items():
+            action = tray_lang_menu.addAction(lang_name)
+            action.setCheckable(True)
+            action.setChecked(lang_code == current_lang)
+            action.triggered.connect(
+                lambda checked, lc=lang_code: self._change_language(lc)
+            )
+        settings_menu.addMenu(tray_lang_menu)
 
         menu.addSeparator()
 
         exit_action = menu.addAction("Exit")
-        exit_action.triggered.connect(self._exit_from_tray)
+        exit_action.triggered.connect(self._quit_completely)
 
         self.tray.setContextMenu(menu)
 
@@ -276,10 +319,31 @@ class MainWindow(QMainWindow):
 
     def _toggle_auto_start(self, enabled):
         set_auto_start(enabled)
+        self._auto_start_action.setChecked(enabled)
 
     def _exit_from_tray(self):
         self.tray.hide()
         self.close()
+
+    def _quit_completely(self):
+        self.tray.hide()
+        self.setAttribute(0x307, False)  # WA_DeleteOnClose
+        self.close()
+        import sys
+
+        sys.exit(0)
+
+    def _logout(self):
+        from app.core import clear_dek
+
+        clear_dek()
+        _safe_log("user_logout")
+        self.tray.hide()
+        self.setAttribute(0x307, False)
+        self.close()
+        import sys
+
+        sys.exit(0)
 
     def closeEvent(self, event):
         if get_minimize_to_tray():

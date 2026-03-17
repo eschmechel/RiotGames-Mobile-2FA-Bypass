@@ -1,0 +1,53 @@
+{
+    "app": {
+        "title": "Riot 2FA Bypass",
+        "no_accounts": "No hay cuentas aún — agregue una con los botones de arriba",
+        "no_search_results": "No hay cuentas que coincidan con tu búsqueda"
+    },
+    "buttons": {
+        "add_via_login": "Agregar vía Login",
+        "add_manually": "Agregar Manualmente"
+    },
+    "menu": {
+        "settings": "Configuración",
+        "reset_password": "Restablecer Contraseña",
+        "minimize_to_tray": "Minimizar a la bandeja al cerrar",
+        "start_with_windows": "Iniciar con Windows",
+        "notifications": "Notificaciones de escritorio",
+        "language": "Idioma",
+        "exit": "Salir"
+    },
+    "tray": {
+        "show_window": "Mostrar Ventana",
+        "copy_code": "Copiar Código 2FA",
+        "no_accounts": "Sin cuentas"
+    },
+    "notifications": {
+        "account_added": "Cuenta Agregada",
+        "account_removed": "Cuenta Eliminada",
+        "code_expiring": "Código por Expirar",
+        "code_expiring_message": "Tu código 2FA se actualizará en 5 segundos"
+    },
+    "dialogs": {
+        "setup_title": "Configurar Riot 2FA Bypass",
+        "unlock_title": "Desbloquear Riot 2FA Bypass",
+        "login_title": "Inicio de Sesión Riot — Riot 2FA Bypass",
+        "add_manually_title": "Agregar Cuenta Manualmente",
+        "reset_title": "Restablecer Contraseña",
+        "reauth_title": "Re-autenticar"
+    },
+    "messages": {
+        "success_added": "2FA agregado para {name}",
+        "success_reset": "La contraseña se ha restablecido exitosamente.",
+        "error_no_key": "No se encontró la clave de cifrado. Por favor reinicie la aplicación.",
+        "error_migration": "Sus cuentas necesitan ser re-cifradas. Por favor establezca una contraseña para asegurar sus cuentas.",
+        "passwords_dont_match": "Las contraseñas no coinciden",
+        "invalid_password": "Contraseña Inválida",
+        "incorrect_password": "Contraseña incorrecta",
+        "remove_confirm": "¿Eliminar 2FA para {name}?",
+        "remove_warning": "Esto no se puede deshacer."
+    },
+    "search": {
+        "placeholder": "Buscar cuentas..."
+    }
+}

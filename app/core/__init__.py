@@ -11,6 +11,8 @@ from app.core.storage import (
     set_auto_start,
     get_notifications_enabled,
     set_notifications_enabled,
+    get_language,
+    set_language,
 )
 from app.core.auth_totp import PERIOD, get_code, extract_seed
 from app.core.encryption import (
@@ -48,6 +50,8 @@ __all__ = [
     "set_auto_start",
     "get_notifications_enabled",
     "set_notifications_enabled",
+    "get_language",
+    "set_language",
     "PERIOD",
     "get_code",
     "extract_seed",
