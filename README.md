@@ -170,6 +170,39 @@ If you find this tool useful, consider supporting its development!
 
 ---
 
+### 📋 Changelog
+
+#### v2.1.5
+**New Features**
+- System tray with quick-copy menu for 2FA codes
+- Auto-start with Windows option
+- Account search/filter functionality
+- Desktop notifications for important events
+- Multi-language support (English, Spanish, French)
+- Logout button to clear stored credentials
+
+**Bug Fixes**
+- Fixed Remember Me auto-unlock (try keyring first)
+- Fixed Exit to quit app completely
+- Fixed tray menu checkbox sync with menu bar
+- Fixed jittery timer (reduced refresh rate)
+- Fixed language selector in settings
+
+**UI Improvements**
+- Changed accent colors from cyan to red (#ff4444)
+- Wider browser window (960px → 1100px)
+
+#### v2.1.4
+- Various bug fixes and improvements
+
+#### v2.1.3
+- Reduced instruction bar height in login dialog
+
+#### v2.1.2
+- Critical bug fixes
+
+---
+
 ### 🙌 Credits
 
 - **Original Author**: [Sysy's](https://github.com/Askin242)
